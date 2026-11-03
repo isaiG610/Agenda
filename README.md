@@ -5,6 +5,8 @@ Se trata de una agenda interactiva para agendar eventos cotidianos en base a la 
 - Modificar eventos ya existentes
 - Eliminar eventos ya existentes
 - por ver
+## Instalacion
+---------
 ## Integrantes
-González Nuñez isai
-Zuñiga de León Bryan
+- González Nuñez isai
+- Zuñiga de León Bryan
