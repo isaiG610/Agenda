@@ -1,14 +1,14 @@
-
 {
   "name": "events-agenda",
   "version": "1.0.0",
-  "description": "",
+  "description": "Event-driven agenda built with Node.js (POE IH050)",
   "license": "ISC",
-  "author": "",
-  "type": "commonjs",
-  "main": "app.js",
+  "author": "Isai Gonzalez Nunez, Bryan Zuniga De Leon",
+  "type": "module",
+  "main": "src/server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
   },
   "dependencies": {
     "dotenv": "^18.0.9",
