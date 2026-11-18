@@ -1,19 +1,25 @@
 // src/models/AgendaItem.js
 // ------------------------------------------------------------
-// Represents ONE item in the agenda (a meeting, a reminder...).
+// ABSTRACT base class for every item in the agenda.
+// Rubric: POO (abstraction, encapsulation, inheritance, polymorphism).
 // Uses private fields (#), getters and setters (encapsulation).
 // ------------------------------------------------------------
 
+import { toLocalDateString } from '../utils/dateUtils.js';
+
 export class AgendaItem {
-  // PRIVATE fields: the # means nothing outside this class
-  // can read or change them directly.
+  // [POO] PRIVATE fields: nothing outside this class can touch them.
   #id;
   #title;
   #date;
   #description;
 
-  // The constructor runs when we call: new AgendaItem(...)
   constructor(id, title, date, description = '') {
+    // [POO] Abstract class: "new AgendaItem()" is not allowed,
+    // only "new Meeting()" or "new Reminder()".
+    if (new.target === AgendaItem) {
+      throw new Error('AgendaItem is abstract. Create a Meeting or a Reminder.');
+    }
     this.#id = id;
     // We use the setters (no #) so the data is VALIDATED on creation.
     this.title = title;
@@ -21,7 +27,6 @@ export class AgendaItem {
     this.description = description;
   }
 
-  // GETTER: lets us READ the value like a property: item.id
   // There is no setter for id → it cannot be changed after creation.
   get id() {
     return this.#id;
@@ -31,11 +36,13 @@ export class AgendaItem {
     return this.#title;
   }
 
-  // SETTER: runs on ASSIGNMENT: item.title = 'new title'
-  // We validate before saving. If the data is invalid, we throw an error.
+  // SETTER: validates before saving. Invalid data → throw an error.
   set title(value) {
     if (typeof value !== 'string' || value.trim() === '') {
       throw new Error('The title cannot be empty.');
+    }
+    if (value.trim().length > 100) {
+      throw new Error('The title must be 100 characters or less.');
     }
     this.#title = value.trim();
   }
@@ -44,7 +51,7 @@ export class AgendaItem {
     return this.#date;
   }
 
-  // Receives a string like '2026-12-05T10:00' and converts it to a Date object.
+  // Receives a string like '2026-12-05T10:00' (or a Date) and stores a Date object.
   set date(value) {
     const parsed = new Date(value);
     if (Number.isNaN(parsed.getTime())) {
@@ -57,7 +64,43 @@ export class AgendaItem {
     return this.#description;
   }
 
+  // The database returns NULL for an empty description, so we store '' instead.
   set description(value) {
+    if (value === undefined || value === null) {
+      this.#description = '';
+      return;
+    }
     this.#description = String(value).trim();
+  }
+
+  // Shared getter: every child class inherits it.
+  get formattedDate() {
+    return this.#date.toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' });
+  }
+
+  // [POO] ABSTRACT members: children MUST override them.
+  get type() {
+    throw new Error('Child classes must implement "get type()".');
+  }
+
+  getSummary() {
+    throw new Error('Child classes must implement "getSummary()".');
+  }
+
+  // [POO] Default behavior: a generic item never alerts. Reminder overrides it.
+  isDue(now) {
+    return false;
+  }
+
+  // Called automatically by JSON.stringify (and by res.json in Express).
+  // The date is local time 'YYYY-MM-DDTHH:mm' so it fits <input type="datetime-local">.
+  toJSON() {
+    return {
+      id: this.#id,
+      type: this.type,
+      title: this.#title,
+      date: toLocalDateString(this.#date),
+      description: this.#description,
+    };
   }
 }
