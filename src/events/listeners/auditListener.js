@@ -18,14 +18,11 @@ const LOG_FILE = fileURLToPath(new URL('../../../logs/audit.log', import.meta.ur
 const pendingLines = new Queue();
 // [DATA STRUCTURE] Stack: last 10 actions, the newest one on top.
 const recentActivity = new Stack(RECENT_ACTIVITY_LIMIT);
-let isWriting = false;
+// The Promise of the loop that is writing right now, or null if idle.
+let writing = null;
 
 // Writes the queued lines ONE BY ONE, so two events never mix in the file.
-async function processQueue() {
-  if (isWriting) {
-    return; // the loop that is already running will take the new lines
-  }
-  isWriting = true;
+async function writeQueuedLines() {
   try {
     while (!pendingLines.isEmpty()) {
       await appendLine(LOG_FILE, pendingLines.dequeue());
@@ -33,7 +30,21 @@ async function processQueue() {
   } catch (error) {
     console.error(`Audit log error: ${error.message}`);
   } finally {
-    isWriting = false;
+    writing = null;
+  }
+}
+
+function processQueue() {
+  // If a loop is already running, it will also take the new lines.
+  if (writing === null) {
+    writing = writeQueuedLines();
+  }
+}
+
+// [EVENT 06] Used on shutdown: wait until the last lines are in the file.
+export async function flushAuditLog() {
+  if (writing !== null) {
+    await writing;
   }
 }
 
