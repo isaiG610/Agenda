@@ -106,6 +106,11 @@ class AgendaService {
       const workerUrl = new URL('../workers/StatsWorker.js', import.meta.url);
       const worker = new Worker(workerUrl, { workerData });
       worker.on('message', (stats) => {
+        // "node --watch" sends its own internal messages through workers
+        // (e.g. { 'watch:import': [...] }). They are not our stats: ignore them.
+        if (stats.nextDays === undefined) {
+          return;
+        }
         appEvents.emit(EVENTS.STATS_READY, stats);
         resolve(stats);
       });
