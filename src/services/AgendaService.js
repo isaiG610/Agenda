@@ -29,7 +29,9 @@ class AgendaService {
       const [result] = await pool.execute(sql, params);
       return result;
     } catch (error) {
-      const dbError = new Error(`Database error: ${error.message}`);
+      // When MySQL is down, mysql2 sends an empty message but a code (ECONNREFUSED).
+      const reason = error.message || error.code;
+      const dbError = new Error(`Database error: ${reason}. Is MySQL running?`);
       dbError.status = 500;
       throw dbError;
     }
