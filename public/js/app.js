@@ -20,6 +20,7 @@ const SERVER_EVENTS = Object.freeze({
 const ITEM_TYPES = Object.freeze({ MEETING: 'meeting', REMINDER: 'reminder' });
 const MAX_READINGS = 10;
 const TOAST_DURATION_MS = 6000;
+const DETAILS_HINT = 'Hover a row to see its details.'; // same text as index.html
 
 const form = document.querySelector('#item-form');
 const fields = {
@@ -36,6 +37,7 @@ const canvas = document.querySelector('#stats-chart');
 
 let items = []; // last list received from the server
 let editingId = null; // null = creating a new item, a number = editing that id
+let detailsId = null; // id of the item shown in the details bar (null = none)
 const readings = []; // newest first, max 10
 
 // ---------- Small helpers ----------
@@ -104,6 +106,7 @@ function createRow(item) {
 }
 
 function renderTable() {
+  showDetails(detailsId); // after a CRUD change: refresh the details bar, or clear it if the item is gone
   tableBody.innerHTML = '';
   if (items.length === 0) {
     tableBody.innerHTML = '<tr><td colspan="5">No items yet. Create one with the form.</td></tr>';
@@ -116,10 +119,15 @@ function renderTable() {
 
 function showDetails(id) {
   const item = items.find((element) => element.id === id);
-  if (item !== undefined) {
-    const description = item.description || 'No description';
-    detailsBar.textContent = `${item.type.toUpperCase()} · ${item.title} · ${formatDate(item.date)} · ${getExtra(item)} · ${description}`;
+  if (item === undefined) {
+    // The item no longer exists (deleted here or in another tab): show the hint again.
+    detailsId = null;
+    detailsBar.textContent = DETAILS_HINT;
+    return;
   }
+  detailsId = id;
+  const description = item.description || 'No description';
+  detailsBar.textContent = `${item.type.toUpperCase()} · ${item.title} · ${formatDate(item.date)} · ${getExtra(item)} · ${description}`;
 }
 
 // ---------- Stats, activity and readings ----------
