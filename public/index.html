@@ -2,6 +2,8 @@
 <!--
   public/index.html
   The dashboard page. No inline JavaScript: all behavior lives in js/app.js.
+  Layout: left column = input (form) and history (activity),
+          right column = live output (readings, table, chart).
   Rubric: GUI (form, table, chart, counters, live readings, activity, alerts).
 -->
 <html lang="en">
@@ -22,95 +24,101 @@
   </header>
 
   <main class="layout">
-    <!-- Form: create and edit items -->
-    <section class="card" aria-labelledby="form-title">
-      <h2 id="form-title">New item</h2>
-      <form id="item-form" novalidate>
-        <label>Type
-          <select id="type">
-            <option value="meeting">Meeting</option>
-            <option value="reminder">Reminder</option>
-          </select>
-        </label>
-        <label>Title
-          <input id="title" type="text" maxlength="100" placeholder="e.g. Team sync">
-        </label>
-        <label>Date and time
-          <input id="date" type="datetime-local">
-        </label>
-        <label id="location-field">Location
-          <input id="location" type="text" maxlength="100" placeholder="e.g. Library, room 2">
-        </label>
-        <label id="minutes-field" hidden>Alert minutes before
-          <input id="minutesBefore" type="number" min="0" step="1" value="10">
-        </label>
-        <label>Description
-          <textarea id="description" rows="3" placeholder="Optional"></textarea>
-        </label>
-        <div class="form-buttons">
-          <button type="submit" class="primary">Save</button>
-          <button type="button" id="cancel-button">Cancel</button>
+    <div class="column">
+      <!-- Form: create and edit items (Event 05 highlights it on focus) -->
+      <section class="card" aria-labelledby="form-title">
+        <h2 id="form-title">New item</h2>
+        <form id="item-form" novalidate>
+          <label>Type
+            <select id="type">
+              <option value="meeting">Meeting</option>
+              <option value="reminder">Reminder</option>
+            </select>
+          </label>
+          <label>Title
+            <input id="title" type="text" maxlength="100" placeholder="e.g. Team sync">
+          </label>
+          <label>Date and time
+            <input id="date" type="datetime-local">
+          </label>
+          <label id="location-field">Location
+            <input id="location" type="text" maxlength="100" placeholder="e.g. Library, room 2">
+          </label>
+          <label id="minutes-field" hidden>Alert minutes before
+            <input id="minutesBefore" type="number" min="0" step="1" value="10">
+          </label>
+          <label>Description
+            <textarea id="description" rows="3" placeholder="Optional"></textarea>
+          </label>
+          <div class="form-buttons">
+            <button type="submit" class="primary">Save</button>
+            <button type="button" id="cancel-button">Cancel</button>
+          </div>
+          <p class="hint"><kbd>Ctrl</kbd>/<kbd>Cmd</kbd> + <kbd>S</kbd> to save, <kbd>Esc</kbd> to cancel</p>
+        </form>
+      </section>
+
+      <!-- Recent activity (Stack, newest first) -->
+      <section class="log" aria-labelledby="activity-title">
+        <h2 id="activity-title">Recent activity</h2>
+        <ul id="activity-list" class="small-list">
+          <li>No activity yet.</li>
+        </ul>
+      </section>
+    </div>
+
+    <div class="column">
+      <!-- Live readings from the server timer (Event 01) -->
+      <section class="card monitor" aria-labelledby="readings-title">
+        <h2 id="readings-title">Live readings <small>(every 10 s)</small></h2>
+        <dl class="reading">
+          <div><dt>Last reading</dt><dd id="reading-time">-</dd></div>
+          <div><dt>Total items</dt><dd id="reading-total">-</dd></div>
+          <div><dt>Items today</dt><dd id="reading-today">-</dd></div>
+          <div><dt>Reminders due</dt><dd id="reading-due">-</dd></div>
+          <div class="text-value"><dt>Next item</dt><dd id="reading-next">-</dd></div>
+          <div><dt>Starts in</dt><dd id="reading-minutes">-</dd></div>
+        </dl>
+        <h3>Last 10 readings</h3>
+        <ol id="readings-list" class="small-list">
+          <li>Waiting for the first reading…</li>
+        </ol>
+      </section>
+
+      <!-- Items table (event delegation in app.js) -->
+      <section class="card" aria-labelledby="table-title">
+        <h2 id="table-title">Agenda items</h2>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr><th>Type</th><th>Title</th><th>Date</th><th>Extra</th><th>Actions</th></tr>
+            </thead>
+            <tbody id="items-body">
+              <tr><td colspan="5">Loading…</td></tr>
+            </tbody>
+          </table>
         </div>
-        <p class="hint">Ctrl/Cmd + S to save, Esc to cancel</p>
-      </form>
-    </section>
+        <p id="details-bar" class="details-bar">Hover a row to see its details.</p>
+      </section>
 
-    <!-- Counters + live readings (Event 01) -->
-    <section class="card" aria-labelledby="readings-title">
-      <div class="counters">
-        <div class="counter">
-          <span id="meeting-count" class="counter-value">0</span>
-          <span class="counter-label">Meetings</span>
+      <!-- Canvas chart (Event 04: mouse tooltip) + counters (worker stats) -->
+      <section class="card" aria-labelledby="chart-title">
+        <div class="card-header">
+          <h2 id="chart-title">Items in the next 7 days</h2>
+          <div class="counters">
+            <div class="counter">
+              <span id="meeting-count" class="counter-value">0</span>
+              <span class="counter-label">Meetings</span>
+            </div>
+            <div class="counter reminder">
+              <span id="reminder-count" class="counter-value">0</span>
+              <span class="counter-label">Reminders</span>
+            </div>
+          </div>
         </div>
-        <div class="counter">
-          <span id="reminder-count" class="counter-value">0</span>
-          <span class="counter-label">Reminders</span>
-        </div>
-      </div>
-      <h2 id="readings-title">Live readings <small>(every 10 s)</small></h2>
-      <dl class="reading">
-        <div><dt>Last reading</dt><dd id="reading-time">-</dd></div>
-        <div><dt>Total items</dt><dd id="reading-total">-</dd></div>
-        <div><dt>Items today</dt><dd id="reading-today">-</dd></div>
-        <div><dt>Reminders due</dt><dd id="reading-due">-</dd></div>
-        <div class="wide"><dt>Next item</dt><dd id="reading-next">-</dd></div>
-        <div><dt>Starts in</dt><dd id="reading-minutes">-</dd></div>
-      </dl>
-      <h3>Last 10 readings</h3>
-      <ol id="readings-list" class="small-list">
-        <li>Waiting for the first reading…</li>
-      </ol>
-    </section>
-
-    <!-- Items table (event delegation in app.js) -->
-    <section class="card wide-card" aria-labelledby="table-title">
-      <h2 id="table-title">Agenda items</h2>
-      <div class="table-wrapper">
-        <table>
-          <thead>
-            <tr><th>Type</th><th>Title</th><th>Date</th><th>Extra</th><th>Actions</th></tr>
-          </thead>
-          <tbody id="items-body">
-            <tr><td colspan="5">Loading…</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <p id="details-bar" class="details-bar">Hover a row to see its details.</p>
-    </section>
-
-    <!-- Canvas chart (Event 04: mouse tooltip) -->
-    <section class="card" aria-labelledby="chart-title">
-      <h2 id="chart-title">Items in the next 7 days</h2>
-      <canvas id="stats-chart" width="640" height="280"></canvas>
-    </section>
-
-    <!-- Recent activity (Stack, newest first) -->
-    <section class="card" aria-labelledby="activity-title">
-      <h2 id="activity-title">Recent activity</h2>
-      <ul id="activity-list" class="small-list">
-        <li>No activity yet.</li>
-      </ul>
-    </section>
+        <canvas id="stats-chart" width="800" height="300"></canvas>
+      </section>
+    </div>
   </main>
 
   <div id="chart-tooltip" class="tooltip" hidden></div>

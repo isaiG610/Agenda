@@ -273,7 +273,7 @@ function setStatus(text, isLive) {
 
 function handleReminderDue(event) {
   const reminder = JSON.parse(event.data);
-  showToast(`⏰ Reminder: "${reminder.title}" at ${formatDate(reminder.date)}`, 'alert');
+  showToast(`Reminder: "${reminder.title}" at ${formatDate(reminder.date)}`, 'alert');
   loadActivity();
 }
 

@@ -6,10 +6,10 @@
 // ------------------------------------------------------------
 
 const PADDING = 36;
-const BAR_COLOR = '#2563eb';
-const HOVER_COLOR = '#f59e0b';
-const TEXT_COLOR = '#1e293b';
-const GRID_COLOR = '#e2e8f0';
+const BAR_COLOR = '#2448c4'; // same colors as styles.css
+const HOVER_COLOR = '#94500a';
+const TEXT_COLOR = '#1b2230';
+const GRID_COLOR = '#d6dae1';
 
 // Remembers where each bar was drawn, so mousemove can find it.
 let bars = [];
@@ -38,7 +38,7 @@ function drawAxis(context, canvas) {
 export function drawChart(canvas, nextDays, hoverIndex = -1) {
   const context = canvas.getContext('2d');
   context.clearRect(0, 0, canvas.width, canvas.height);
-  context.font = '14px system-ui, sans-serif';
+  context.font = '16px system-ui, sans-serif';
   context.textAlign = 'center';
   drawAxis(context, canvas);
 
