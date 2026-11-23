@@ -45,7 +45,7 @@ function buildNextDays(items) {
 
 // [EVENT 12] postMessage sends the result back to the main thread.
 parentPort.postMessage({
-  meetings: countByType(workerData, ITEM_TYPES.MEETING),
+  activities: countByType(workerData, ITEM_TYPES.ACTIVITY),
   reminders: countByType(workerData, ITEM_TYPES.REMINDER),
   nextDays: buildNextDays(workerData),
 });

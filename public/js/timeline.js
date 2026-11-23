@@ -2,7 +2,7 @@
 // ------------------------------------------------------------
 // Week view drawn by hand on a <canvas>: one ROW per day of the
 // current week (Mon to Sun), hours on the horizontal axis.
-// Meeting = bar from start to end with its title inside.
+// Activity = bar from start to end with its title inside.
 // Reminder = diamond at its time with its title next to it.
 // Today's row is highlighted and has the red "Now" line.
 // Plus our own tooltip that follows the mouse.
@@ -21,10 +21,10 @@ const DIAMOND_SIZE = 10;
 const MIN_LETTERS_INSIDE = 3; // if fewer letters fit inside the bar, the title goes outside
 const DAYS_IN_WEEK = 7;
 const MS_PER_HOUR = 3600000;
-const MEETING_TYPE = 'meeting'; // same value as ITEM_TYPES.MEETING in app.js
+const ACTIVITY_TYPE = 'activity'; // same value as ITEM_TYPES.ACTIVITY in app.js
 
 // Same colors as styles.css (strong enough to read on a projector).
-const MEETING_COLOR = '#2448c4';
+const ACTIVITY_COLOR = '#2448c4';
 const REMINDER_COLOR = '#94500a';
 const NOW_COLOR = '#b42318';
 const TEXT_COLOR = '#1b2230';
@@ -125,15 +125,15 @@ function drawDayRow(context, canvas, day, top, isToday) {
   context.fillText(`${weekday} ${day.getDate()}`, 12, top + ROW_HEIGHT / 2 + 6);
 }
 
-// Meeting: a bar from start to end with the title written inside it.
+// Activity: a bar from start to end with the title written inside it.
 // If the bar is too short to show at least 3 letters, the title goes on its right side.
-function drawMeeting(context, canvas, item, day, top, hourToX) {
+function drawActivity(context, canvas, item, day, top, hourToX) {
   const startX = hourToX(hoursSince(day, item.date));
   const endX = hourToX(hoursSince(day, item.endDate));
   const width = Math.max(endX - startX, 4);
   const textY = top + ROW_HEIGHT / 2 + 5;
   context.globalAlpha = 0.88; // a little transparent, so overlapping bars can be seen
-  context.fillStyle = MEETING_COLOR;
+  context.fillStyle = ACTIVITY_COLOR;
   context.fillRect(startX, top + BAR_MARGIN, width, ROW_HEIGHT - BAR_MARGIN * 2);
   context.globalAlpha = 1;
   context.font = 'bold 15px system-ui, sans-serif';
@@ -145,7 +145,7 @@ function drawMeeting(context, canvas, item, day, top, hourToX) {
     context.fillText(insideText, startX + 8, textY);
   } else {
     const title = fitText(context, item.title, canvas.width - RIGHT_SPACE - right - 6);
-    context.fillText(title, right + 6, textY); // fillStyle is still MEETING_COLOR
+    context.fillText(title, right + 6, textY); // fillStyle is still ACTIVITY_COLOR
     right = right + 6 + context.measureText(title).width;
   }
   shapes.push({ left: startX, right, top, bottom: top + ROW_HEIGHT, item });
@@ -205,8 +205,8 @@ export function drawTimeline(canvas, items, now) {
   for (let i = 0; i < days.length; i++) {
     const top = AXIS_HEIGHT + i * ROW_HEIGHT;
     for (const item of items.filter((element) => isSameDay(days[i], element.date))) {
-      if (item.type === MEETING_TYPE) {
-        drawMeeting(context, canvas, item, days[i], top, hourToX);
+      if (item.type === ACTIVITY_TYPE) {
+        drawActivity(context, canvas, item, days[i], top, hourToX);
       } else {
         drawReminder(context, canvas, item, days[i], top, hourToX);
       }
@@ -217,9 +217,9 @@ export function drawTimeline(canvas, items, now) {
   }
 }
 
-// Meeting: 'Title · 3:00 PM – 5:00 PM · Room'. Reminder: 'Title · 9:30 PM · Alert 00:15 hrs before'.
+// Activity: 'Title · 3:00 PM – 5:00 PM · Room'. Reminder: 'Title · 9:30 PM · Alert 00:15 hrs before'.
 function tooltipText(item) {
-  if (item.type === MEETING_TYPE) {
+  if (item.type === ACTIVITY_TYPE) {
     return `${item.title} · ${formatClock(item.date)} – ${formatClock(item.endDate)} · ${item.location}`;
   }
   return `${item.title} · ${formatClock(item.date)} · Alert ${formatDuration(item.minutesBefore)} before`;

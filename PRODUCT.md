@@ -17,7 +17,7 @@ web
 
 ## Product Purpose
 
-A web agenda for two kinds of items, **meetings** (title, date/time, location, description) and
+A web agenda for two kinds of items, **activities** (title, date/time, location, description) and
 **reminders** (title, date/time, minutes-before alert, description), with create, read, update
 and delete. Its real purpose is to show an event-driven architecture working live: server
 timers, CRUD events, a worker thread and Server-Sent Events, all visible as on-screen updates
@@ -51,10 +51,10 @@ The interface works as an event monitor: it makes the event flow behind each upd
 ## Capabilities and Constraints
 
 - Dashboard regions: main **week view** panel at the top (hand-drawn canvas, one row per day of
-  the current week, meetings as titled bars, reminders as diamonds, today's row highlighted with
+  the current week, activities as titled bars, reminders as diamonds, today's row highlighted with
   a "Now" line, tooltip, "+ New item" button and a "Next … · Updated … by the server timer"
   line); below it the items table with Edit/Delete and a hover details bar (left) and the
-  7-day canvas bar chart with meeting/reminder counters plus the Recent activity list (right);
+  7-day canvas bar chart with activity/reminder counters plus the Recent activity list (right);
   the item form in a modal dialog (type-dependent location / duration / minutes-before
   fields, Save, Cancel, hotkey hint); toast alerts; connection status.
 - Time formats: clock times without seconds (`10:41 PM`), durations as `HH:MM hrs`.
@@ -75,7 +75,7 @@ The interface works as an event monitor: it makes the event flow behind each upd
 
 ## Evidence on Hand
 
-- Four sample rows in `database/schema.sql` (2 meetings, 2 reminders, dates relative to `NOW()`).
+- Sample rows in `database/schema.sql` (4 items today, 4 in the next days, dates relative to `NOW()`; some descriptions have several lines).
 - `README.md` with architecture, event catalog, rubric mapping and design decisions.
 - No screenshots, user testimonials or external references exist; do not invent them.
 

@@ -19,7 +19,7 @@ export const EVENTS = Object.freeze({
   APP_SHUTDOWN: 'app:shutdown',
 });
 
-export const ITEM_TYPES = Object.freeze({ MEETING: 'meeting', REMINDER: 'reminder' });
+export const ITEM_TYPES = Object.freeze({ ACTIVITY: 'activity', REMINDER: 'reminder' });
 
 export const TIMER_INTERVAL_MS = 10000; // short on purpose so the live demo is visible
 export const RECENT_ACTIVITY_LIMIT = 10;

@@ -19,7 +19,7 @@ const SERVER_EVENTS = Object.freeze({
   REMINDER_DUE: 'reminder:due',
   STATS_READY: 'stats:ready',
 });
-const ITEM_TYPES = Object.freeze({ MEETING: 'meeting', REMINDER: 'reminder' });
+const ITEM_TYPES = Object.freeze({ ACTIVITY: 'activity', REMINDER: 'reminder' });
 const TOAST_DURATION_MS = 6000;
 const DETAILS_HINT = 'Hover a row to see its details.'; // same text as index.html
 
@@ -57,7 +57,7 @@ async function requestJson(url, options = {}) {
 }
 
 function getExtra(item) {
-  if (item.type === ITEM_TYPES.MEETING) {
+  if (item.type === ITEM_TYPES.ACTIVITY) {
     return `${item.location} · ${formatDuration(item.durationMinutes)}`;
   }
   return `Alert ${formatDuration(item.minutesBefore)} before`;
@@ -127,7 +127,7 @@ function showDetails(id) {
 
 // ---------- Stats and activity ----------
 function renderStats(stats) {
-  setText('#meeting-count', stats.meetings);
+  setText('#activity-count', stats.activities);
   setText('#reminder-count', stats.reminders);
   drawChart(canvas, stats.nextDays);
 }
@@ -186,10 +186,10 @@ function refreshAll() {
 
 // ---------- Form (inside the <dialog>) ----------
 function toggleTypeFields() {
-  const isMeeting = fields.type.value === ITEM_TYPES.MEETING;
-  document.querySelector('#location-field').hidden = !isMeeting;
-  document.querySelector('#duration-field').hidden = !isMeeting;
-  document.querySelector('#minutes-field').hidden = isMeeting;
+  const isActivity = fields.type.value === ITEM_TYPES.ACTIVITY;
+  document.querySelector('#location-field').hidden = !isActivity;
+  document.querySelector('#duration-field').hidden = !isActivity;
+  document.querySelector('#minutes-field').hidden = isActivity;
 }
 
 function clearForm() {
@@ -246,9 +246,9 @@ function editItem(id) {
   fields.title.value = item.title;
   fields.date.value = item.date; // already 'YYYY-MM-DDTHH:mm'
   fields.description.value = item.description;
-  fields.location.value = item.type === ITEM_TYPES.MEETING ? item.location : '';
+  fields.location.value = item.type === ITEM_TYPES.ACTIVITY ? item.location : '';
   fields.minutesBefore.value = item.type === ITEM_TYPES.REMINDER ? item.minutesBefore : 10;
-  fields.durationMinutes.value = item.type === ITEM_TYPES.MEETING ? item.durationMinutes : 60;
+  fields.durationMinutes.value = item.type === ITEM_TYPES.ACTIVITY ? item.durationMinutes : 60;
   toggleTypeFields();
   setText('#form-title', `Editing: ${item.title}`);
   dialog.showModal();

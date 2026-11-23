@@ -45,7 +45,7 @@ export function createReading(items, now) {
   };
 }
 
-// [POO] Polymorphism: we call isDue() without asking if it is a Meeting or a Reminder.
+// [POO] Polymorphism: we call isDue() without asking if it is an Activity or a Reminder.
 function checkReminders(items, now) {
   for (const item of items) {
     if (item.isDue(now) && !notifiedIds.has(item.id)) {

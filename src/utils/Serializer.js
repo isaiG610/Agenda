@@ -1,19 +1,19 @@
 // src/utils/Serializer.js
 // ------------------------------------------------------------
 // Converts data between its 3 shapes:
-//   DB row (snake_case)  <->  class object (Meeting/Reminder)  <->  JSON
+//   DB row (snake_case)  <->  class object (Activity/Reminder)  <->  JSON
 // Rubric: serialization + Factory pattern (createItem).
 // ------------------------------------------------------------
 
-import { Meeting } from '../models/Meeting.js';
+import { Activity } from '../models/Activity.js';
 import { Reminder } from '../models/Reminder.js';
 import { ITEM_TYPES } from '../config/constants.js';
 
 // [POO] FACTORY: the caller does not need to know which class to create.
 // It passes plain data and gets back the right object.
 export function createItem(data) {
-  if (data.type === ITEM_TYPES.MEETING) {
-    return new Meeting(data.id, data.title, data.date, data.location, data.description, data.durationMinutes);
+  if (data.type === ITEM_TYPES.ACTIVITY) {
+    return new Activity(data.id, data.title, data.date, data.location, data.description, data.durationMinutes);
   }
   if (data.type === ITEM_TYPES.REMINDER) {
     return new Reminder(data.id, data.title, data.date, data.minutesBefore, data.description);
@@ -48,7 +48,7 @@ export function itemToRow(item) {
     minutes_before: null,
     duration_minutes: null,
   };
-  if (item.type === ITEM_TYPES.MEETING) {
+  if (item.type === ITEM_TYPES.ACTIVITY) {
     row.location = item.location;
     row.duration_minutes = item.durationMinutes;
   } else {

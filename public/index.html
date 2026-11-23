@@ -19,7 +19,7 @@
   <header class="page-header">
     <div>
       <h1>Event-Driven Agenda</h1>
-      <p class="subtitle">POE IH050 · Meetings and reminders updated in real time</p>
+      <p class="subtitle">POE IH050 · Activities and reminders updated in real time</p>
     </div>
     <span id="connection-status" class="status">Connecting…</span>
   </header>
@@ -33,7 +33,7 @@
       </div>
       <div class="chart-scroll">
         <canvas id="timeline-chart" class="week-chart" width="1200" height="454" role="img"
-          aria-label="This week's meetings and reminders, one row per day"></canvas>
+          aria-label="This week's activities and reminders, one row per day"></canvas>
       </div>
       <p id="today-status" class="status-line">Waiting for the first reading from the server timer…</p>
     </section>
@@ -62,8 +62,8 @@
             <h2 id="chart-title">Items in the next 7 days</h2>
             <div class="counters">
               <div class="counter">
-                <span id="meeting-count" class="counter-value">0</span>
-                <span class="counter-label">Meetings</span>
+                <span id="activity-count" class="counter-value">0</span>
+                <span class="counter-label">Activities</span>
               </div>
               <div class="counter reminder">
                 <span id="reminder-count" class="counter-value">0</span>
@@ -93,7 +93,7 @@
     <form id="item-form" novalidate>
       <label>Type
         <select id="type">
-          <option value="meeting">Meeting</option>
+          <option value="activity">Activity</option>
           <option value="reminder">Reminder</option>
         </select>
       </label>

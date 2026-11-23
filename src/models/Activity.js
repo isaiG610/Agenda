@@ -1,6 +1,6 @@
-// src/models/Meeting.js
+// src/models/Activity.js
 // ------------------------------------------------------------
-// A meeting: an AgendaItem that also has a location and a duration.
+// An activity: an AgendaItem that also has a location and a duration.
 // Rubric: POO (inheritance with extends/super, polymorphism).
 // ------------------------------------------------------------
 
@@ -9,7 +9,7 @@ import { ITEM_TYPES } from '../config/constants.js';
 
 const MS_PER_MINUTE = 60000;
 
-export class Meeting extends AgendaItem {
+export class Activity extends AgendaItem {
   #location;
   #durationMinutes;
 
@@ -26,7 +26,7 @@ export class Meeting extends AgendaItem {
 
   set location(value) {
     if (typeof value !== 'string' || value.trim() === '') {
-      throw new Error('The location cannot be empty for a meeting.');
+      throw new Error('The location cannot be empty for an activity.');
     }
     if (value.trim().length > 100) {
       throw new Error('The location must be 100 characters or less.');
@@ -49,15 +49,15 @@ export class Meeting extends AgendaItem {
 
   // [POO] Override of the abstract getter.
   get type() {
-    return ITEM_TYPES.MEETING;
+    return ITEM_TYPES.ACTIVITY;
   }
 
   // [POO] Override: each class describes itself in its own way.
   getSummary() {
-    return `Meeting "${this.title}" at ${this.#location} on ${this.formattedDate}`;
+    return `Activity "${this.title}" at ${this.#location} on ${this.formattedDate}`;
   }
 
-  // [POO] Override: a meeting ends "durationMinutes" after it starts.
+  // [POO] Override: an activity ends "durationMinutes" after it starts.
   getEndDate() {
     return new Date(this.date.getTime() + this.#durationMinutes * MS_PER_MINUTE);
   }

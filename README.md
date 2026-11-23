@@ -1,6 +1,6 @@
 # Agenda
 
-An interactive, event-driven web agenda to schedule everyday events (meetings and reminders), built with Node.js following Event-Oriented Programming (POE IH050).
+An interactive, event-driven web agenda to schedule everyday activities (classes, practice, dinner…) and reminders, built with Node.js following Event-Oriented Programming (POE IH050).
 
 ## Team
 
@@ -12,9 +12,9 @@ Course: *Programación Orientada a Eventos* (IH050), 3rd semester, Computer Scie
 ## Features
 
 - Create, view, edit and delete two kinds of items:
-  - **Meeting**: title, date/time, duration (minutes), location, description.
+  - **Activity**: title, date/time, duration (minutes), location, description.
   - **Reminder**: title, date/time, minutes before, description. It fires a real-time alert when `now >= date - minutesBefore`.
-- Live dashboard (no page reloads). The main panel is a **week view** drawn on a canvas: one row per day (Mon to Sun), meetings as bars with their title, reminders as diamonds, today's row highlighted with a red "Now" line. Below it: the items table, a canvas bar chart (items per day, next 7 days) with counters, and the recent activity. Pop-up alerts for reminders.
+- Live dashboard (no page reloads). The main panel is a **week view** drawn on a canvas: one row per day (Mon to Sun), activities as bars with their title, reminders as diamonds, today's row highlighted with a red "Now" line. Below it: the items table, a canvas bar chart (items per day, next 7 days) with counters, and the recent activity. Pop-up alerts for reminders.
 - The form opens in a modal dialog ("+ New item" button, or "Edit" in the table).
 - Times without seconds (`10:41 PM`) and durations as `HH:MM hrs` (`02:00 hrs`) on the whole page.
 - Server timer that generates a **reading** every 10 seconds; each reading moves the "Now" line and updates the "Next" line.
@@ -36,9 +36,9 @@ What the teacher asked to see, and where it appears on screen:
 Follow these steps in order during the presentation:
 
 1. **Dashboard running** – run `npm run dev` and open http://localhost:3000. The console prints `Server ready at http://localhost:3000` and `logs/audit.log` gets a `server:ready` line.
-2. **Generation of readings** – wait 10 seconds without touching anything: under the week view the "Updated" time changes, the "Next" line recalculates the time left (`HH:MM hrs`) and the red "Now" line on today's row moves to the server time. Meetings are bars with their title (start → end), reminders are diamonds with their title.
+2. **Generation of readings** – wait 10 seconds without touching anything: under the week view the "Updated" time changes, the "Next" line recalculates the time left (`HH:MM hrs`) and the red "Now" line on today's row moves to the server time. Activities are bars with their title (start → end), reminders are diamonds with their title.
 3. **CRUD persistence**
-   - Click **+ New item**: the form opens in a dialog. Create a meeting for later today (with a duration) and save with `Ctrl/Cmd + S`; create a reminder too. Both appear in the table **and** in the week view, and the dialog closes by itself.
+   - Click **+ New item**: the form opens in a dialog. Create an activity for later today (with a duration) and save with `Ctrl/Cmd + S`; create a reminder too. Both appear in the table **and** in the week view, and the dialog closes by itself.
    - Edit one item (**Edit** opens the same dialog with its data) and delete another (**Delete**).
    - Stop the server with `Ctrl + C` (clean shutdown messages) and start it again: all items are still there because they live in MySQL.
 4. **Tables / charts rendering** – open a second tab: after each create/edit/delete, both tabs re-render the week view, the table, the 7-day chart, the counters and the recent activity automatically.
@@ -76,7 +76,7 @@ Agenda/
 └── src/
     ├── server.js                # Express API, SSE, startup, shutdown, errors
     ├── config/                  # constants.js (event names), database.js (pool)
-    ├── models/                  # AgendaItem (abstract), Meeting, Reminder
+    ├── models/                  # AgendaItem (abstract), Activity, Reminder
     ├── collections/             # Queue and Stack
     ├── events/                  # AppEventEmitter (singleton), reminderTimer, listeners/
     ├── services/                # AgendaService (CRUD + Map cache)
@@ -107,7 +107,7 @@ flowchart LR
 
 | Rubric criterion | Where it is covered |
 |---|---|
-| Object-oriented programming (POO) | `src/models/AgendaItem.js`, `Meeting.js`, `Reminder.js` (polymorphic `isDue()` and `getEndDate()`), `src/utils/Serializer.js` (factory) |
+| Object-oriented programming (POO) | `src/models/AgendaItem.js`, `Activity.js`, `Reminder.js` (polymorphic `isDue()` and `getEndDate()`), `src/utils/Serializer.js` (factory) |
 | Event architecture (POE) | `src/events/AppEventEmitter.js`, `src/events/reminderTimer.js`, `src/events/listeners/*`, `src/config/constants.js` |
 | Persistence (MySQL + files) | `database/schema.sql`, `src/config/database.js`, `src/services/AgendaService.js`, `src/utils/FileManager.js` |
 | Data structures (Map, Set, Queue, Stack) | `src/collections/DataStructures.js`, `AgendaService.js` (Map), `reminderTimer.js` and `uiListener.js` (Set), `auditListener.js` (Queue, Stack) |
@@ -149,7 +149,7 @@ Events with **multiple handlers**: `ITEM_CREATED` → audit + ui; `REMINDER_DUE`
 | `Map` cache in the service | Query MySQL every time | Fast lookups by id; the timer does not query the database every 10 s. |
 | Server-Sent Events | WebSockets / Socket.io, polling | We only need server → browser; SSE is native in Node and the browser, no library. |
 | Hand-made canvas charts (timeline and bars) | Chart.js, a calendar library | Works offline in class and shows our own mouse events. |
-| `getEndDate()` in the models | Computing the end time in the browser | Polymorphism: `AgendaItem` returns the start date, `Meeting` overrides it with start + `durationMinutes`; `toJSON()` sends `endDate` so the browser only draws. |
+| `getEndDate()` in the models | Computing the end time in the browser | Polymorphism: `AgendaItem` returns the start date, `Activity` overrides it with start + `durationMinutes`; `toJSON()` sends `endDate` so the browser only draws. |
 | Worker thread for statistics | Compute in the main thread | Heavy work leaves the main event loop free. |
 | `Queue`, `Stack`, `Set` | Plain arrays | Queue: log lines are written one by one, in order. Stack: newest activity first (max 10). Set: a reminder alerts only once, and each SSE client is stored once. |
 
@@ -199,7 +199,7 @@ Errors always return JSON: `{ "error": "message" }` with status 400 (invalid dat
 Example bodies for `POST /api/items` (`durationMinutes` is optional, default 60):
 
 ```json
-{ "type": "meeting", "title": "Data Structures class", "date": "2026-11-25T15:00", "durationMinutes": 120, "location": "CUT building B", "description": "" }
+{ "type": "activity", "title": "Data Structures class", "date": "2026-11-25T15:00", "durationMinutes": 120, "location": "CUT building B", "description": "" }
 { "type": "reminder", "title": "Submit homework", "date": "2026-11-25T18:00", "minutesBefore": 30, "description": "Upload the PDF" }
 ```
 
@@ -213,7 +213,7 @@ Every item in the responses also has `endDate` (same format as `date`).
 | `src/config/constants.js` | Event names, item types, timer interval |
 | `src/config/database.js` | MySQL pool, `testConnection()`, `closePool()` |
 | `src/models/AgendaItem.js` | Abstract base class (private fields, validation, `getEndDate`, `toJSON`) |
-| `src/models/Meeting.js` | Meeting (adds `location` and `durationMinutes`, overrides `getEndDate`) |
+| `src/models/Activity.js` | Activity (adds `location` and `durationMinutes`, overrides `getEndDate`) |
 | `src/models/Reminder.js` | Reminder (adds `minutesBefore`, overrides `isDue`) |
 | `src/collections/DataStructures.js` | `Queue` and `Stack` |
 | `src/events/AppEventEmitter.js` | The singleton event bus |

@@ -16,9 +16,9 @@ export class AgendaItem {
 
   constructor(id, title, date, description = '') {
     // [POO] Abstract class: "new AgendaItem()" is not allowed,
-    // only "new Meeting()" or "new Reminder()".
+    // only "new Activity()" or "new Reminder()".
     if (new.target === AgendaItem) {
-      throw new Error('AgendaItem is abstract. Create a Meeting or a Reminder.');
+      throw new Error('AgendaItem is abstract. Create an Activity or a Reminder.');
     }
     this.#id = id;
     // We use the setters (no #) so the data is VALIDATED on creation.
@@ -93,7 +93,7 @@ export class AgendaItem {
   }
 
   // [POO] Default behavior: the item ends when it starts (a single point in time).
-  // Meeting overrides it with start + durationMinutes. We return a copy so
+  // Activity overrides it with start + durationMinutes. We return a copy so
   // nobody can change our private #date from outside.
   getEndDate() {
     return new Date(this.#date.getTime());
