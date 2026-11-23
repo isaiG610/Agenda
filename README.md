@@ -12,28 +12,37 @@ Course: *Programación Orientada a Eventos* (IH050), 3rd semester, Computer Scie
 ## Features
 
 - Create, view, edit and delete two kinds of items:
-  - **Meeting**: title, date/time, location, description.
+  - **Meeting**: title, date/time, duration (minutes), location, description.
   - **Reminder**: title, date/time, minutes before, description. It fires a real-time alert when `now >= date - minutesBefore`.
-- Live dashboard (no page reloads): form, items table, canvas bar chart (items per day, next 7 days), counters, **Live readings** panel, recent activity and pop-up alerts.
-- Server timer that generates a **reading** every 10 seconds.
+- Live dashboard (no page reloads): form, items table, **Today timeline** (Gantt-style canvas), canvas bar chart (items per day, next 7 days), counters, recent activity and pop-up alerts.
+- Server timer that generates a **reading** every 10 seconds; each reading moves the "Now" line of the timeline and updates the "Next" line.
 - Data stored in MySQL; every action written to `logs/audit.log`.
 - Works in several browser tabs at the same time (Server-Sent Events).
 - Keyboard shortcuts: `Ctrl/Cmd + S` saves, `Esc` cancels.
 
 ## Live demo script
 
+What the teacher asked to see, and where it appears on screen:
+
+| Teacher asks for | How the Agenda shows it |
+|---|---|
+| Dashboard web / GUI running | `npm run dev` → http://localhost:3000 with the full dashboard |
+| Generation of readings ("lecturas") | Every 10 s the server timer (Event 01) builds a **reading** and emits `TIMER_TICK`. In the **Today** panel the red "Now" line moves and the line under it changes: `Next: <title> in <N> min · Updated <time> by the server timer (Event 01)`. |
+| CRUD persistence | Create / edit / delete from the form and the table; data is in MySQL and survives a server restart. |
+| Tables / charts rendering | The items table, the Today timeline, the 7-day chart and the counters re-render automatically after every CRUD event and every reading. |
+
 Follow these steps in order during the presentation:
 
 1. **Dashboard running** – run `npm run dev` and open http://localhost:3000. The console prints `Server ready at http://localhost:3000` and `logs/audit.log` gets a `server:ready` line.
-2. **Generation of readings** – wait 10 seconds without touching anything: the **Live readings** panel updates (total items, items today, next item, minutes to it, reminders due) and the list of the last 10 readings grows, newest first.
+2. **Generation of readings** – wait 10 seconds without touching anything: in the **Today** panel the "Updated" time changes, the "Next" line recalculates the minutes and the red "Now" line moves to the server time. Meetings are bars (start → end), reminders are diamonds; items that already ended are lighter.
 3. **CRUD persistence**
-   - Create a meeting and a reminder from the form (try `Ctrl/Cmd + S`).
+   - Create a meeting for later today (with a duration) and a reminder from the form (try `Ctrl/Cmd + S`). Both appear in the table **and** in the Today timeline.
    - Edit one item (Edit button) and delete another (Delete button).
    - Stop the server with `Ctrl + C` (clean shutdown messages) and start it again: all items are still there because they live in MySQL.
-4. **Tables / charts rendering** – open a second tab: after each create/edit/delete, both tabs re-render the table, the chart, the counters and the recent activity automatically.
+4. **Tables / charts rendering** – open a second tab: after each create/edit/delete, both tabs re-render the table, the Today timeline, the 7-day chart, the counters and the recent activity automatically.
 5. **Threshold alert** – create a reminder 3 minutes ahead with "Alert minutes before" = 5. Within ~10 s a pop-up appears (only once) and the server console prints `[ALERT] ...`.
 6. **Errors** – save with an empty title: a clear red message appears and the server keeps running.
-7. **GUI events** – hover the chart (tooltip), hover a table row (details bar), click inside the form (blue highlight), press `Esc` (clears the form).
+7. **GUI events** – hover a bar or diamond in the Today timeline (tooltip with title, start–end time and location), hover the 7-day chart (tooltip), hover a table row (details bar), click inside the form (blue highlight), press `Esc` (clears the form).
 
 ## Tech stack
 
@@ -45,21 +54,22 @@ Follow these steps in order during the presentation:
 | Configuration | `dotenv` |
 | Real time | Server-Sent Events (native `EventSource`) |
 | Frontend | Plain HTML, CSS and JavaScript (browser ES modules) |
-| Chart | Hand-drawn `<canvas>` |
+| Charts | Hand-drawn `<canvas>` (Today timeline and 7-day bar chart) |
 | Background work | `worker_threads` |
 
 ## Architecture
 
 ```
 Agenda/
-├── database/schema.sql          # database, table and 4 sample rows
+├── database/schema.sql          # database, table and sample rows (4 of them today)
 ├── logs/                        # audit.log is written here
 ├── public/                      # the dashboard (HTML, CSS, JS)
 │   ├── index.html
 │   ├── css/styles.css
 │   └── js/
 │       ├── app.js               # DOM events, fetch, SSE
-│       └── chart.js             # canvas chart + mouse tooltip
+│       ├── chart.js             # 7-day canvas chart + mouse tooltip
+│       └── timeline.js          # Today timeline (canvas) + mouse tooltip
 └── src/
     ├── server.js                # Express API, SSE, startup, shutdown, errors
     ├── config/                  # constants.js (event names), database.js (pool)
@@ -87,41 +97,41 @@ flowchart LR
   Timer -- REMINDER_DUE --> Alert[alertListener]
   Timer -- REMINDER_DUE --> Audit
   Timer -- REMINDER_DUE --> UI
-  UI -- SSE --> Page[Browser re-renders table, chart, readings, toast]
+  UI -- SSE --> Page[Browser re-renders table, Today timeline, chart, toast]
 ```
 
 ## Rubric mapping
 
 | Rubric criterion | Where it is covered |
 |---|---|
-| Object-oriented programming (POO) | `src/models/AgendaItem.js`, `Meeting.js`, `Reminder.js`, `src/utils/Serializer.js` (factory) |
+| Object-oriented programming (POO) | `src/models/AgendaItem.js`, `Meeting.js`, `Reminder.js` (polymorphic `isDue()` and `getEndDate()`), `src/utils/Serializer.js` (factory) |
 | Event architecture (POE) | `src/events/AppEventEmitter.js`, `src/events/reminderTimer.js`, `src/events/listeners/*`, `src/config/constants.js` |
 | Persistence (MySQL + files) | `database/schema.sql`, `src/config/database.js`, `src/services/AgendaService.js`, `src/utils/FileManager.js` |
 | Data structures (Map, Set, Queue, Stack) | `src/collections/DataStructures.js`, `AgendaService.js` (Map), `reminderTimer.js` and `uiListener.js` (Set), `auditListener.js` (Queue, Stack) |
 | Error handling | `src/server.js` (try/catch in routes, error middleware, `uncaughtException`, `unhandledRejection`) |
-| GUI / frontend | `public/index.html`, `public/css/styles.css`, `public/js/app.js`, `public/js/chart.js` |
+| GUI / frontend | `public/index.html`, `public/css/styles.css`, `public/js/app.js`, `public/js/chart.js`, `public/js/timeline.js` |
 
 ## Event catalog
 
 | # | Event | Where |
 |---|---|---|
-| 01 | Timer / Polling | `reminderTimer.js` `setInterval` → `TIMER_TICK` (live reading) + `REMINDER_DUE` |
+| 01 | Timer / Polling | `reminderTimer.js` `setInterval` → `TIMER_TICK` (reading: moves the "Now" line and updates "Next" in the Today panel) + `REMINDER_DUE` |
 | 02 | System Load | `server.js` `startServer()` → `SERVER_READY`; browser `DOMContentLoaded` |
 | 03 | Keyboard hotkeys | `app.js`: `Ctrl/Cmd + S` saves the form, `Escape` clears it |
-| 04 | Mouse tracking | `chart.js`: `mousemove` on the canvas → tooltip; `mouseover` on table rows → details bar |
+| 04 | Mouse tracking | `timeline.js` and `chart.js`: `mousemove` on the canvas → tooltip; `mouseover` on table rows → details bar |
 | 05 | Focus / Blur | `app.js`: `focusin` / `focusout` highlight the form; `visibilitychange` reloads data |
 | 06 | Destroy / Cleanup | `server.js` `SIGINT` → `APP_SHUTDOWN`, stop timer, close SSE clients, close DB pool |
 | 08 | Custom threshold alert | `REMINDER_DUE` (time left <= `minutesBefore`), `Reminder.isDue()` |
 | 09 | Unhandled exception | `process.on('uncaughtException')` and `'unhandledRejection'` → `APP_ERROR` → audit |
-| 10 | CRUD Data Change | `AgendaService` emits `ITEM_CREATED` / `ITEM_UPDATED` / `ITEM_DELETED` after MySQL succeeds |
-| 11 | GUI render | `uiListener` → SSE → `app.js` re-renders table, chart, readings and activity |
+| 10 | CRUD Data Change | `AgendaService` emits `ITEM_CREATED` / `ITEM_UPDATED` / `ITEM_DELETED` after MySQL succeeds; the browser redraws the table and the Today timeline |
+| 11 | GUI render | `uiListener` → SSE → `app.js` re-renders table, Today timeline, chart, counters and activity |
 | 12 | Worker message | `StatsWorker` `postMessage` → service resolves the stats → `STATS_READY` |
 
 Events with **multiple handlers**: `ITEM_CREATED` → audit + ui; `REMINDER_DUE` → alert + audit + ui.
 
 ## Individual events
 
-- **Bryan – Event 01 (Timer / Polling)**: `src/events/reminderTimer.js`. A `setInterval` runs every 10 s. Each tick builds a *reading* with `createReading(items, now)` and emits `TIMER_TICK`; then it calls `item.isDue(now)` on every item (polymorphism) and emits `REMINDER_DUE` once per reminder, using a `Set` of already-notified ids.
+- **Bryan – Event 01 (Timer / Polling)**: `src/events/reminderTimer.js`. A `setInterval` runs every 10 s. Each tick builds a *reading* with `createReading(items, now)` and emits `TIMER_TICK`; then it calls `item.isDue(now)` on every item (polymorphism) and emits `REMINDER_DUE` once per reminder, using a `Set` of already-notified ids. In the browser, `renderReading()` in `app.js` receives each reading and redraws the Today timeline (`drawTimeline(canvas, items, now)` in `timeline.js`) with the server time, so the "Now" line moves by itself.
 - **Isai – Event 10 (CRUD Data Change)**: `src/services/AgendaService.js`. `create`, `update` and `remove` first write to MySQL, then update the `Map` cache and only then emit `ITEM_CREATED`, `ITEM_UPDATED` or `ITEM_DELETED`. The service does not know who listens: the audit log and the browser react on their own.
 
 ## Design decisions
@@ -135,7 +145,8 @@ Events with **multiple handlers**: `ITEM_CREATED` → audit + ui; `REMINDER_DUE`
 | `mysql2` with raw SQL | ORM (Sequelize, Prisma) | We see and control the SQL; `?` placeholders prevent SQL injection. |
 | `Map` cache in the service | Query MySQL every time | Fast lookups by id; the timer does not query the database every 10 s. |
 | Server-Sent Events | WebSockets / Socket.io, polling | We only need server → browser; SSE is native in Node and the browser, no library. |
-| Hand-made canvas chart | Chart.js | Works offline in class and shows our own mouse events. |
+| Hand-made canvas charts (timeline and bars) | Chart.js, a calendar library | Works offline in class and shows our own mouse events. |
+| `getEndDate()` in the models | Computing the end time in the browser | Polymorphism: `AgendaItem` returns the start date, `Meeting` overrides it with start + `durationMinutes`; `toJSON()` sends `endDate` so the browser only draws. |
 | Worker thread for statistics | Compute in the main thread | Heavy work leaves the main event loop free. |
 | `Queue`, `Stack`, `Set` | Plain arrays | Queue: log lines are written one by one, in order. Stack: newest activity first (max 10). Set: a reminder alerts only once, and each SSE client is stored once. |
 
@@ -155,7 +166,7 @@ Events with **multiple handlers**: `ITEM_CREATED` → audit + ui; `REMINDER_DUE`
    ```bash
    cp .env.example .env
    ```
-5. Create the database, the table and the sample data (this also **resets** the table):
+5. Create the database, the table and the sample data (this also **resets** the table; run it again on the demo day so the sample items are "today"):
    ```bash
    mysql -u root -p < database/schema.sql
    ```
@@ -182,11 +193,14 @@ If MySQL is not reachable, the server prints `Cannot connect to MySQL. Check you
 
 Errors always return JSON: `{ "error": "message" }` with status 400 (invalid data), 404 (not found) or 500 (server/database error).
 
-Example body for `POST /api/items`:
+Example bodies for `POST /api/items` (`durationMinutes` is optional, default 60):
 
 ```json
+{ "type": "meeting", "title": "Data Structures class", "date": "2026-11-25T15:00", "durationMinutes": 120, "location": "CUT building B", "description": "" }
 { "type": "reminder", "title": "Submit homework", "date": "2026-11-25T18:00", "minutesBefore": 30, "description": "Upload the PDF" }
 ```
+
+Every item in the responses also has `endDate` (same format as `date`).
 
 ## Project structure
 
@@ -195,8 +209,8 @@ Example body for `POST /api/items`:
 | `src/server.js` | Express app, REST API, SSE endpoint, startup, shutdown, global errors |
 | `src/config/constants.js` | Event names, item types, timer interval |
 | `src/config/database.js` | MySQL pool, `testConnection()`, `closePool()` |
-| `src/models/AgendaItem.js` | Abstract base class (private fields, validation, `toJSON`) |
-| `src/models/Meeting.js` | Meeting (adds `location`) |
+| `src/models/AgendaItem.js` | Abstract base class (private fields, validation, `getEndDate`, `toJSON`) |
+| `src/models/Meeting.js` | Meeting (adds `location` and `durationMinutes`, overrides `getEndDate`) |
 | `src/models/Reminder.js` | Reminder (adds `minutesBefore`, overrides `isDue`) |
 | `src/collections/DataStructures.js` | `Queue` and `Stack` |
 | `src/events/AppEventEmitter.js` | The singleton event bus |
@@ -210,4 +224,5 @@ Example body for `POST /api/items`:
 | `src/utils/FileManager.js` | Async append to files |
 | `src/utils/dateUtils.js` | `toLocalDateString()` for `datetime-local` inputs |
 | `public/js/app.js` | Dashboard logic (DOM, fetch, SSE, hotkeys, focus) |
-| `public/js/chart.js` | Canvas chart and tooltip |
+| `public/js/chart.js` | 7-day canvas chart and tooltip |
+| `public/js/timeline.js` | Today timeline (Gantt-style canvas) and tooltip |

@@ -24,7 +24,7 @@ timers, CRUD events, a worker thread and Server-Sent Events, all visible as on-s
 with no page reload.
 
 Success means that during the demo the teacher can see, without being told where to look:
-the dashboard running; a new **live reading** every 10 s; CRUD changes that persist in MySQL
+the dashboard running; a new **reading** every 10 s (the Today panel's "Now" line and "Updated" time change); CRUD changes that persist in MySQL
 across a server restart; and the table, chart and counters re-rendering after every change,
 including in two browser tabs at once and with reminder alerts appearing as pop-ups.
 
@@ -45,16 +45,17 @@ The interface works as an event monitor: it makes the event flow behind each upd
 - The demo follows the "Live demo script" in `README.md` and the checklist in section 12 of
   `CLAUDE.md`, which includes a server restart, two tabs open at once, a reminder
   alert, invalid input, MySQL turned off, and Ctrl+C shutdown.
-- Individual defense: Bryan presents Event 01 (Timer / live readings), Isai presents Event 10
+- Individual defense: Bryan presents Event 01 (Timer / readings in the Today panel), Isai presents Event 10
   (CRUD Data Change). Those two flows must be easy to point at on screen.
 
 ## Capabilities and Constraints
 
-- Dashboard regions: item form (type-dependent location / minutes-before fields, Save, Cancel,
-  hotkey hint), items table with Edit/Delete and a hover details bar, hand-drawn canvas bar
-  chart (items per day, next 7 days) with mouse tooltip, meeting/reminder counters, Live
-  readings panel (current values plus last 10 readings), Recent activity list (newest first),
-  toast alerts, connection status.
+- Dashboard regions: item form (type-dependent location / duration / minutes-before fields,
+  Save, Cancel, hotkey hint), items table with Edit/Delete and a hover details bar, **Today**
+  panel (hand-drawn Gantt-style canvas timeline of today's items with a "Now" line, a tooltip
+  and a "Next … · Updated … by the server timer" line), hand-drawn canvas bar chart (items per
+  day, next 7 days) with mouse tooltip, meeting/reminder counters, Recent activity list
+  (newest first), toast alerts, connection status.
 - Fixed stack: Node.js 20+ ES Modules, Express 5, mysql2, dotenv. Frontend is plain HTML, CSS
   and browser-module JavaScript. **No other libraries**: no CSS framework, UI framework,
   chart library, icon library or bundler.

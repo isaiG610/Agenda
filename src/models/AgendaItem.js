@@ -92,6 +92,13 @@ export class AgendaItem {
     return false;
   }
 
+  // [POO] Default behavior: the item ends when it starts (a single point in time).
+  // Meeting overrides it with start + durationMinutes. We return a copy so
+  // nobody can change our private #date from outside.
+  getEndDate() {
+    return new Date(this.#date.getTime());
+  }
+
   // Called automatically by JSON.stringify (and by res.json in Express).
   // The date is local time 'YYYY-MM-DDTHH:mm' so it fits <input type="datetime-local">.
   toJSON() {
@@ -100,6 +107,8 @@ export class AgendaItem {
       type: this.type,
       title: this.#title,
       date: toLocalDateString(this.#date),
+      // [POO] Polymorphism: this.getEndDate() runs the child's version if it has one.
+      endDate: toLocalDateString(this.getEndDate()),
       description: this.#description,
     };
   }

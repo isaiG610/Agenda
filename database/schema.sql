@@ -1,6 +1,6 @@
 -- database/schema.sql
 -- ------------------------------------------------------------
--- Creates the database, the single table and 4 sample rows.
+-- Creates the database, the single table and the sample rows.
 -- Rubric: persistence (MySQL). Run it with:
 --   mysql -u <user> -p < database/schema.sql
 -- WARNING: it drops the table first, so it also RESETS the data.
@@ -21,17 +21,28 @@ CREATE TABLE agenda_items (
   description TEXT,
   location VARCHAR(100) NULL,      -- only meetings
   minutes_before INT NULL,         -- only reminders
+  duration_minutes INT NULL,       -- only meetings
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Sample data. Dates are relative to NOW() so they are always
--- in the near future, no matter when the script is run.
-INSERT INTO agenda_items (type, title, date, description, location, minutes_before) VALUES
+-- Sample data. Dates are relative to NOW(), so "today" is always the day
+-- the script is run (for the Today timeline) and the rest is in the next days.
+INSERT INTO agenda_items (type, title, date, description, location, minutes_before, duration_minutes) VALUES
+  -- Today
+  ('meeting', 'Data Structures class', DATE_FORMAT(NOW(), '%Y-%m-%d 15:00:00'),
+    'Trees and graphs', 'CUT building B, room 4', NULL, 120),
+  ('meeting', 'Dinner with family', DATE_FORMAT(NOW(), '%Y-%m-%d 18:30:00'),
+    '', 'Home', NULL, 60),
+  ('meeting', 'Study for the POE exam', DATE_FORMAT(NOW(), '%Y-%m-%d 20:00:00'),
+    'Review the event catalog', 'Library', NULL, 60),
+  ('reminder', 'Upload POE homework', DATE_FORMAT(NOW(), '%Y-%m-%d 21:30:00'),
+    'Upload the PDF to Classroom', NULL, 15, NULL),
+  -- Next days
   ('meeting', 'Team sync with Isai', DATE_FORMAT(NOW() + INTERVAL 1 DAY, '%Y-%m-%d 10:00:00'),
-    'Review the project progress', 'Library, room 2', NULL),
+    'Review the project progress', 'Library, room 2', NULL, 45),
   ('meeting', 'POE final presentation', DATE_FORMAT(NOW() + INTERVAL 3 DAY, '%Y-%m-%d 12:00:00'),
-    'Live demo of the agenda', 'CUT building A', NULL),
+    'Live demo of the agenda', 'CUT building A', NULL, 30),
   ('reminder', 'Submit homework', DATE_FORMAT(NOW() + INTERVAL 2 DAY, '%Y-%m-%d 18:00:00'),
-    'Upload the PDF to Classroom', NULL, 30),
+    'Upload the PDF to Classroom', NULL, 30, NULL),
   ('reminder', 'Buy coffee', DATE_FORMAT(NOW() + INTERVAL 5 DAY, '%Y-%m-%d 08:00:00'),
-    'Before the morning class', NULL, 10);
+    'Before the morning class', NULL, 10, NULL);

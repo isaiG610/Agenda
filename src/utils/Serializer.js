@@ -13,7 +13,7 @@ import { ITEM_TYPES } from '../config/constants.js';
 // It passes plain data and gets back the right object.
 export function createItem(data) {
   if (data.type === ITEM_TYPES.MEETING) {
-    return new Meeting(data.id, data.title, data.date, data.location, data.description);
+    return new Meeting(data.id, data.title, data.date, data.location, data.description, data.durationMinutes);
   }
   if (data.type === ITEM_TYPES.REMINDER) {
     return new Reminder(data.id, data.title, data.date, data.minutesBefore, data.description);
@@ -23,7 +23,7 @@ export function createItem(data) {
   throw error;
 }
 
-// MySQL row → object. The column minutes_before becomes minutesBefore.
+// MySQL row → object. snake_case columns become camelCase (minutes_before → minutesBefore).
 export function rowToItem(row) {
   return createItem({
     id: row.id,
@@ -33,6 +33,7 @@ export function rowToItem(row) {
     description: row.description,
     location: row.location,
     minutesBefore: row.minutes_before,
+    durationMinutes: row.duration_minutes,
   });
 }
 
@@ -45,9 +46,11 @@ export function itemToRow(item) {
     description: item.description,
     location: null,
     minutes_before: null,
+    duration_minutes: null,
   };
   if (item.type === ITEM_TYPES.MEETING) {
     row.location = item.location;
+    row.duration_minutes = item.durationMinutes;
   } else {
     row.minutes_before = item.minutesBefore;
   }

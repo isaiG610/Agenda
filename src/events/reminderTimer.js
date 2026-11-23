@@ -61,7 +61,7 @@ function tick() {
   try {
     const now = new Date();
     const items = agendaService.getAll();
-    // [EVENT 01] Publish the reading. uiListener sends it to the "Live readings" panel.
+    // [EVENT 01] Publish the reading. uiListener sends it to the "Today" panel.
     appEvents.emit(EVENTS.TIMER_TICK, createReading(items, now));
     checkReminders(items, now);
   } catch (error) {

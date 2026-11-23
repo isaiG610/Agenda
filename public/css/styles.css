@@ -8,7 +8,7 @@
 :root {
   --paper: #eef0f3;          /* page background (cool light gray) */
   --surface: #ffffff;        /* cards and inputs */
-  --ink: #1b2230;            /* main text and the live readings panel */
+  --ink: #1b2230;            /* main text and strong rules */
   --muted: #5d6573;          /* secondary text */
   --line: #d6dae1;           /* light borders */
   --control-border: #9aa1ad; /* input and button borders */
@@ -20,7 +20,6 @@
   --danger: #b42318;
   --danger-soft: #fdecea;
   --success: #1f7a4d;
-  --monitor-muted: #a7afbd;  /* secondary text on the dark panel */
   --radius: 10px;
   --font: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 }
@@ -52,7 +51,7 @@ body {
   color: var(--ink);
 }
 
-h1, h2, h3 {
+h1, h2 {
   margin: 0;
   line-height: 1.2;
 }
@@ -61,21 +60,6 @@ h2 {
   margin-bottom: 16px;
   font-size: 1.2rem;
   font-weight: 700;
-}
-
-h2 small {
-  color: var(--muted);
-  font-size: 0.8em;
-  font-weight: 400;
-}
-
-h3 {
-  margin: 24px 0 8px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--muted);
 }
 
 /* ---------- Header ---------- */
@@ -298,52 +282,26 @@ button.danger:hover {
   background: var(--danger-soft);
 }
 
-/* ---------- Live readings panel (Event 01) ---------- */
-/* Dark on purpose: it is the part of the page that changes by itself. */
-.monitor {
-  border-color: var(--ink);
-  background: var(--ink);
-  color: var(--paper);
+/* ---------- Today timeline (Event 01) ---------- */
+/* A stronger border than the other cards: it is the part that changes by itself. */
+.today {
+  border: 2px solid var(--ink);
 }
 
-.monitor h2 small,
-.monitor h3,
-.monitor dt,
-.monitor time {
-  color: var(--monitor-muted);
+.card-meta {
+  color: var(--muted);
+  font-size: 0.95rem;
 }
 
-.reading {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px 24px;
-  margin: 0;
-}
-
-.reading div {
-  padding-top: 10px;
-  border-top: 1px solid rgba(238, 240, 243, 0.18);
-}
-
-.reading dt {
-  font-size: 0.8rem;
-}
-
-.reading dd {
-  margin: 4px 0 0;
-  font-size: 1.75rem;
-  font-weight: 700;
-  line-height: 1.15;
+/* "Next: ... · Updated ... by the server timer" line under the timeline. */
+.today-status {
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: 0.875rem;
   font-variant-numeric: tabular-nums;
 }
 
-/* "Next item" is a title, not a number, so it is smaller. */
-.reading .text-value dd {
-  font-size: 1.1rem;
-  line-height: 1.3;
-}
-
-/* ---------- Lists (readings and activity) ---------- */
+/* ---------- Activity list ---------- */
 .small-list {
   max-height: 220px;
   margin: 0;
@@ -360,10 +318,6 @@ button.danger:hover {
   gap: 12px;
   padding: 6px 0;
   border-top: 1px solid var(--line);
-}
-
-.monitor .small-list li {
-  border-top-color: rgba(238, 240, 243, 0.12);
 }
 
 .small-list time {
@@ -484,6 +438,15 @@ canvas {
   height: auto;
 }
 
+/* On phones the charts keep a readable size and scroll sideways. */
+.chart-scroll {
+  overflow-x: auto;
+}
+
+.chart-scroll canvas {
+  min-width: 600px;
+}
+
 .tooltip {
   position: fixed;
   z-index: 20;
@@ -571,12 +534,9 @@ canvas {
     align-items: start;
   }
 
-  .reading {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  /* There is enough room, so the table fits without scrolling. */
-  table {
+  /* There is enough room, so the table and charts fit without scrolling. */
+  table,
+  .chart-scroll canvas {
     min-width: 0;
   }
 }

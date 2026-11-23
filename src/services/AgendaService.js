@@ -12,11 +12,11 @@ import { appEvents } from '../events/AppEventEmitter.js';
 import { EVENTS } from '../config/constants.js';
 import { createItem, rowToItem, itemToRow } from '../utils/Serializer.js';
 
-const INSERT_SQL = 'INSERT INTO agenda_items (type, title, date, description, location, minutes_before) VALUES (?, ?, ?, ?, ?, ?)';
-const UPDATE_SQL = 'UPDATE agenda_items SET type = ?, title = ?, date = ?, description = ?, location = ?, minutes_before = ? WHERE id = ?';
+const INSERT_SQL = 'INSERT INTO agenda_items (type, title, date, description, location, minutes_before, duration_minutes) VALUES (?, ?, ?, ?, ?, ?, ?)';
+const UPDATE_SQL = 'UPDATE agenda_items SET type = ?, title = ?, date = ?, description = ?, location = ?, minutes_before = ?, duration_minutes = ? WHERE id = ?';
 
 function rowValues(row) {
-  return [row.type, row.title, row.date, row.description, row.location, row.minutes_before];
+  return [row.type, row.title, row.date, row.description, row.location, row.minutes_before, row.duration_minutes];
 }
 
 class AgendaService {

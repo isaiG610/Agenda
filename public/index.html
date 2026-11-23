@@ -3,8 +3,8 @@
   public/index.html
   The dashboard page. No inline JavaScript: all behavior lives in js/app.js.
   Layout: left column = input (form) and history (activity),
-          right column = live output (readings, table, chart).
-  Rubric: GUI (form, table, chart, counters, live readings, activity, alerts).
+          right column = live output (today timeline, table, chart).
+  Rubric: GUI (form, table, charts, counters, today timeline, activity, alerts).
 -->
 <html lang="en">
 <head>
@@ -44,6 +44,9 @@
           <label id="location-field">Location
             <input id="location" type="text" maxlength="100" placeholder="e.g. Library, room 2">
           </label>
+          <label id="duration-field">Duration (minutes)
+            <input id="durationMinutes" type="number" min="1" step="1" value="60">
+          </label>
           <label id="minutes-field" hidden>Alert minutes before
             <input id="minutesBefore" type="number" min="0" step="1" value="10">
           </label>
@@ -68,21 +71,17 @@
     </div>
 
     <div class="column">
-      <!-- Live readings from the server timer (Event 01) -->
-      <section class="card monitor" aria-labelledby="readings-title">
-        <h2 id="readings-title">Live readings <small>(every 10 s)</small></h2>
-        <dl class="reading">
-          <div><dt>Last reading</dt><dd id="reading-time">-</dd></div>
-          <div><dt>Total items</dt><dd id="reading-total">-</dd></div>
-          <div><dt>Items today</dt><dd id="reading-today">-</dd></div>
-          <div><dt>Reminders due</dt><dd id="reading-due">-</dd></div>
-          <div class="text-value"><dt>Next item</dt><dd id="reading-next">-</dd></div>
-          <div><dt>Starts in</dt><dd id="reading-minutes">-</dd></div>
-        </dl>
-        <h3>Last 10 readings</h3>
-        <ol id="readings-list" class="small-list">
-          <li>Waiting for the first reading…</li>
-        </ol>
+      <!-- Today timeline: redrawn on every timer tick (Event 01) and CRUD event (Event 10) -->
+      <section class="card today" aria-labelledby="today-title">
+        <div class="card-header">
+          <h2 id="today-title">Today</h2>
+          <span id="today-date" class="card-meta">-</span>
+        </div>
+        <div class="chart-scroll">
+          <canvas id="timeline-chart" width="800" height="90" role="img"
+            aria-label="Timeline of today's meetings and reminders"></canvas>
+        </div>
+        <p id="today-status" class="today-status">Waiting for the first reading from the server timer…</p>
       </section>
 
       <!-- Items table (event delegation in app.js) -->
@@ -116,7 +115,9 @@
             </div>
           </div>
         </div>
-        <canvas id="stats-chart" width="800" height="300"></canvas>
+        <div class="chart-scroll">
+          <canvas id="stats-chart" width="800" height="300"></canvas>
+        </div>
       </section>
     </div>
   </main>
