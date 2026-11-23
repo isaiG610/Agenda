@@ -14,11 +14,13 @@ Course: *Programación Orientada a Eventos* (IH050), 3rd semester, Computer Scie
 - Create, view, edit and delete two kinds of items:
   - **Meeting**: title, date/time, duration (minutes), location, description.
   - **Reminder**: title, date/time, minutes before, description. It fires a real-time alert when `now >= date - minutesBefore`.
-- Live dashboard (no page reloads): form, items table, **Today timeline** (Gantt-style canvas), canvas bar chart (items per day, next 7 days), counters, recent activity and pop-up alerts.
-- Server timer that generates a **reading** every 10 seconds; each reading moves the "Now" line of the timeline and updates the "Next" line.
+- Live dashboard (no page reloads). The main panel is a **week view** drawn on a canvas: one row per day (Mon to Sun), meetings as bars with their title, reminders as diamonds, today's row highlighted with a red "Now" line. Below it: the items table, a canvas bar chart (items per day, next 7 days) with counters, and the recent activity. Pop-up alerts for reminders.
+- The form opens in a modal dialog ("+ New item" button, or "Edit" in the table).
+- Times without seconds (`10:41 PM`) and durations as `HH:MM hrs` (`02:00 hrs`) on the whole page.
+- Server timer that generates a **reading** every 10 seconds; each reading moves the "Now" line and updates the "Next" line.
 - Data stored in MySQL; every action written to `logs/audit.log`.
 - Works in several browser tabs at the same time (Server-Sent Events).
-- Keyboard shortcuts: `Ctrl/Cmd + S` saves, `Esc` cancels.
+- Keyboard shortcuts: `Ctrl/Cmd + S` saves the open dialog, `Esc` closes it.
 
 ## Live demo script
 
@@ -27,22 +29,22 @@ What the teacher asked to see, and where it appears on screen:
 | Teacher asks for | How the Agenda shows it |
 |---|---|
 | Dashboard web / GUI running | `npm run dev` → http://localhost:3000 with the full dashboard |
-| Generation of readings ("lecturas") | Every 10 s the server timer (Event 01) builds a **reading** and emits `TIMER_TICK`. In the **Today** panel the red "Now" line moves and the line under it changes: `Next: <title> in <N> min · Updated <time> by the server timer (Event 01)`. |
-| CRUD persistence | Create / edit / delete from the form and the table; data is in MySQL and survives a server restart. |
-| Tables / charts rendering | The items table, the Today timeline, the 7-day chart and the counters re-render automatically after every CRUD event and every reading. |
+| Generation of readings ("lecturas") | Every 10 s the server timer (Event 01) builds a **reading** and emits `TIMER_TICK`. In the week view (main panel) the red "Now" line moves on today's row and the line under it changes: `Next: <title> in <HH:MM> hrs · Updated <h:mm AM/PM> by the server timer (Event 01)`. |
+| CRUD persistence | Create with "+ New item", edit with "Edit" (same dialog), delete from the table; data is in MySQL and survives a server restart. |
+| Tables / charts rendering | The week view, the items table, the 7-day chart and the counters re-render automatically after every CRUD event and every reading. |
 
 Follow these steps in order during the presentation:
 
 1. **Dashboard running** – run `npm run dev` and open http://localhost:3000. The console prints `Server ready at http://localhost:3000` and `logs/audit.log` gets a `server:ready` line.
-2. **Generation of readings** – wait 10 seconds without touching anything: in the **Today** panel the "Updated" time changes, the "Next" line recalculates the minutes and the red "Now" line moves to the server time. Meetings are bars (start → end), reminders are diamonds; items that already ended are lighter.
+2. **Generation of readings** – wait 10 seconds without touching anything: under the week view the "Updated" time changes, the "Next" line recalculates the time left (`HH:MM hrs`) and the red "Now" line on today's row moves to the server time. Meetings are bars with their title (start → end), reminders are diamonds with their title.
 3. **CRUD persistence**
-   - Create a meeting for later today (with a duration) and a reminder from the form (try `Ctrl/Cmd + S`). Both appear in the table **and** in the Today timeline.
-   - Edit one item (Edit button) and delete another (Delete button).
+   - Click **+ New item**: the form opens in a dialog. Create a meeting for later today (with a duration) and save with `Ctrl/Cmd + S`; create a reminder too. Both appear in the table **and** in the week view, and the dialog closes by itself.
+   - Edit one item (**Edit** opens the same dialog with its data) and delete another (**Delete**).
    - Stop the server with `Ctrl + C` (clean shutdown messages) and start it again: all items are still there because they live in MySQL.
-4. **Tables / charts rendering** – open a second tab: after each create/edit/delete, both tabs re-render the table, the Today timeline, the 7-day chart, the counters and the recent activity automatically.
+4. **Tables / charts rendering** – open a second tab: after each create/edit/delete, both tabs re-render the week view, the table, the 7-day chart, the counters and the recent activity automatically.
 5. **Threshold alert** – create a reminder 3 minutes ahead with "Alert minutes before" = 5. Within ~10 s a pop-up appears (only once) and the server console prints `[ALERT] ...`.
 6. **Errors** – save with an empty title: a clear red message appears and the server keeps running.
-7. **GUI events** – hover a bar or diamond in the Today timeline (tooltip with title, start–end time and location), hover the 7-day chart (tooltip), hover a table row (details bar), click inside the form (blue highlight), press `Esc` (clears the form).
+7. **GUI events** – hover a bar or diamond in the week view (tooltip with title, start–end time and location or alert), hover the 7-day chart (tooltip), hover a table row (details bar), click inside the form of the dialog (blue highlight), press `Esc` (closes the dialog and clears the form).
 
 ## Tech stack
 
@@ -54,7 +56,7 @@ Follow these steps in order during the presentation:
 | Configuration | `dotenv` |
 | Real time | Server-Sent Events (native `EventSource`) |
 | Frontend | Plain HTML, CSS and JavaScript (browser ES modules) |
-| Charts | Hand-drawn `<canvas>` (Today timeline and 7-day bar chart) |
+| Charts | Hand-drawn `<canvas>` (week view and 7-day bar chart) |
 | Background work | `worker_threads` |
 
 ## Architecture
@@ -69,7 +71,8 @@ Agenda/
 │   └── js/
 │       ├── app.js               # DOM events, fetch, SSE
 │       ├── chart.js             # 7-day canvas chart + mouse tooltip
-│       └── timeline.js          # Today timeline (canvas) + mouse tooltip
+│       ├── timeline.js          # week view (canvas) + mouse tooltip
+│       └── format.js            # clock times and HH:MM durations
 └── src/
     ├── server.js                # Express API, SSE, startup, shutdown, errors
     ├── config/                  # constants.js (event names), database.js (pool)
@@ -97,7 +100,7 @@ flowchart LR
   Timer -- REMINDER_DUE --> Alert[alertListener]
   Timer -- REMINDER_DUE --> Audit
   Timer -- REMINDER_DUE --> UI
-  UI -- SSE --> Page[Browser re-renders table, Today timeline, chart, toast]
+  UI -- SSE --> Page[Browser re-renders week view, table, chart, toast]
 ```
 
 ## Rubric mapping
@@ -109,29 +112,29 @@ flowchart LR
 | Persistence (MySQL + files) | `database/schema.sql`, `src/config/database.js`, `src/services/AgendaService.js`, `src/utils/FileManager.js` |
 | Data structures (Map, Set, Queue, Stack) | `src/collections/DataStructures.js`, `AgendaService.js` (Map), `reminderTimer.js` and `uiListener.js` (Set), `auditListener.js` (Queue, Stack) |
 | Error handling | `src/server.js` (try/catch in routes, error middleware, `uncaughtException`, `unhandledRejection`) |
-| GUI / frontend | `public/index.html`, `public/css/styles.css`, `public/js/app.js`, `public/js/chart.js`, `public/js/timeline.js` |
+| GUI / frontend | `public/index.html`, `public/css/styles.css`, `public/js/app.js`, `public/js/chart.js`, `public/js/timeline.js`, `public/js/format.js` |
 
 ## Event catalog
 
 | # | Event | Where |
 |---|---|---|
-| 01 | Timer / Polling | `reminderTimer.js` `setInterval` → `TIMER_TICK` (reading: moves the "Now" line and updates "Next" in the Today panel) + `REMINDER_DUE` |
+| 01 | Timer / Polling | `reminderTimer.js` `setInterval` → `TIMER_TICK` (reading: moves the "Now" line and updates "Next" in the week view) + `REMINDER_DUE` |
 | 02 | System Load | `server.js` `startServer()` → `SERVER_READY`; browser `DOMContentLoaded` |
-| 03 | Keyboard hotkeys | `app.js`: `Ctrl/Cmd + S` saves the form, `Escape` clears it |
+| 03 | Keyboard hotkeys | `app.js`: `Ctrl/Cmd + S` saves the form while the dialog is open, `Escape` closes the dialog |
 | 04 | Mouse tracking | `timeline.js` and `chart.js`: `mousemove` on the canvas → tooltip; `mouseover` on table rows → details bar |
-| 05 | Focus / Blur | `app.js`: `focusin` / `focusout` highlight the form; `visibilitychange` reloads data |
+| 05 | Focus / Blur | `app.js`: `focusin` / `focusout` highlight the form inside the dialog; `visibilitychange` reloads data |
 | 06 | Destroy / Cleanup | `server.js` `SIGINT` → `APP_SHUTDOWN`, stop timer, close SSE clients, close DB pool |
 | 08 | Custom threshold alert | `REMINDER_DUE` (time left <= `minutesBefore`), `Reminder.isDue()` |
 | 09 | Unhandled exception | `process.on('uncaughtException')` and `'unhandledRejection'` → `APP_ERROR` → audit |
-| 10 | CRUD Data Change | `AgendaService` emits `ITEM_CREATED` / `ITEM_UPDATED` / `ITEM_DELETED` after MySQL succeeds; the browser redraws the table and the Today timeline |
-| 11 | GUI render | `uiListener` → SSE → `app.js` re-renders table, Today timeline, chart, counters and activity |
+| 10 | CRUD Data Change | `AgendaService` emits `ITEM_CREATED` / `ITEM_UPDATED` / `ITEM_DELETED` after MySQL succeeds; the browser redraws the table and the week view |
+| 11 | GUI render | `uiListener` → SSE → `app.js` re-renders the week view, table, chart, counters and activity |
 | 12 | Worker message | `StatsWorker` `postMessage` → service resolves the stats → `STATS_READY` |
 
 Events with **multiple handlers**: `ITEM_CREATED` → audit + ui; `REMINDER_DUE` → alert + audit + ui.
 
 ## Individual events
 
-- **Bryan – Event 01 (Timer / Polling)**: `src/events/reminderTimer.js`. A `setInterval` runs every 10 s. Each tick builds a *reading* with `createReading(items, now)` and emits `TIMER_TICK`; then it calls `item.isDue(now)` on every item (polymorphism) and emits `REMINDER_DUE` once per reminder, using a `Set` of already-notified ids. In the browser, `renderReading()` in `app.js` receives each reading and redraws the Today timeline (`drawTimeline(canvas, items, now)` in `timeline.js`) with the server time, so the "Now" line moves by itself.
+- **Bryan – Event 01 (Timer / Polling)**: `src/events/reminderTimer.js`. A `setInterval` runs every 10 s. Each tick builds a *reading* with `createReading(items, now)` and emits `TIMER_TICK`; then it calls `item.isDue(now)` on every item (polymorphism) and emits `REMINDER_DUE` once per reminder, using a `Set` of already-notified ids. In the browser, `renderReading()` in `app.js` receives each reading and redraws the week view (`drawTimeline(canvas, items, now)` in `timeline.js`) with the server time, so the "Now" line on today's row moves by itself.
 - **Isai – Event 10 (CRUD Data Change)**: `src/services/AgendaService.js`. `create`, `update` and `remove` first write to MySQL, then update the `Map` cache and only then emit `ITEM_CREATED`, `ITEM_UPDATED` or `ITEM_DELETED`. The service does not know who listens: the audit log and the browser react on their own.
 
 ## Design decisions
@@ -225,4 +228,5 @@ Every item in the responses also has `endDate` (same format as `date`).
 | `src/utils/dateUtils.js` | `toLocalDateString()` for `datetime-local` inputs |
 | `public/js/app.js` | Dashboard logic (DOM, fetch, SSE, hotkeys, focus) |
 | `public/js/chart.js` | 7-day canvas chart and tooltip |
-| `public/js/timeline.js` | Today timeline (Gantt-style canvas) and tooltip |
+| `public/js/timeline.js` | Week view (canvas, one row per day) and tooltip |
+| `public/js/format.js` | `formatClock()`, `formatDate()`, `formatDuration()` (`HH:MM hrs`) |

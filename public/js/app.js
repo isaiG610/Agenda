@@ -7,6 +7,7 @@
 
 import { drawChart, enableChartTooltip } from './chart.js';
 import { drawTimeline, enableTimelineTooltip } from './timeline.js';
+import { formatClock, formatDate, formatDuration } from './format.js';
 
 // Copy of the server event names (src/config/constants.js).
 // The browser cannot import files from the src/ folder.
@@ -22,6 +23,7 @@ const ITEM_TYPES = Object.freeze({ MEETING: 'meeting', REMINDER: 'reminder' });
 const TOAST_DURATION_MS = 6000;
 const DETAILS_HINT = 'Hover a row to see its details.'; // same text as index.html
 
+const dialog = document.querySelector('#item-dialog');
 const form = document.querySelector('#item-form');
 const fields = {
   type: document.querySelector('#type'),
@@ -54,20 +56,11 @@ async function requestJson(url, options = {}) {
   return data;
 }
 
-function formatDate(text) {
-  const options = { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
-  return new Date(text).toLocaleString('en-US', options);
-}
-
-function formatTime(isoText) {
-  return new Date(isoText).toLocaleTimeString('en-US');
-}
-
 function getExtra(item) {
   if (item.type === ITEM_TYPES.MEETING) {
-    return `Location: ${item.location} (${item.durationMinutes} min)`;
+    return `${item.location} · ${formatDuration(item.durationMinutes)}`;
   }
-  return `Alert ${item.minutesBefore} min before`;
+  return `Alert ${formatDuration(item.minutesBefore)} before`;
 }
 
 function setText(selector, value) {
@@ -79,7 +72,7 @@ async function loadItems() {
   try {
     items = await requestJson('/api/items');
     renderTable();
-    renderTimeline(new Date()); // [EVENT 10] a CRUD change also redraws the timeline
+    renderTimeline(new Date()); // [EVENT 10] a CRUD change also redraws the week view
   } catch (error) {
     showToast(`Could not load items: ${error.message}`, 'error');
   }
@@ -111,7 +104,7 @@ function renderTable() {
   showDetails(detailsId); // after a CRUD change: refresh the details bar, or clear it if the item is gone
   tableBody.innerHTML = '';
   if (items.length === 0) {
-    tableBody.innerHTML = '<tr><td colspan="5">No items yet. Create one with the form.</td></tr>';
+    tableBody.innerHTML = '<tr><td colspan="5">No items yet. Create one with "+ New item".</td></tr>';
     return;
   }
   for (const item of items) {
@@ -152,7 +145,7 @@ function fillList(selector, lines) {
   list.innerHTML = '';
   for (const line of lines) {
     const entry = document.createElement('li');
-    entry.innerHTML = `<time>${formatTime(line.time)}</time>`;
+    entry.innerHTML = `<time>${formatClock(line.time)}</time>`;
     entry.append(line.text);
     list.appendChild(entry);
   }
@@ -167,10 +160,10 @@ async function loadActivity() {
   }
 }
 
-// ---------- Today timeline ----------
+// ---------- Week view (main panel) ----------
 function renderTimeline(now) {
   const dateOptions = { weekday: 'long', month: 'long', day: 'numeric' };
-  setText('#today-date', now.toLocaleDateString('en-US', dateOptions));
+  setText('#today-title', `Today · ${now.toLocaleDateString('en-US', dateOptions)}`);
   drawTimeline(timelineCanvas, items, now);
 }
 
@@ -180,9 +173,9 @@ function renderReading(reading) {
   renderTimeline(new Date(reading.time));
   let next = 'Next: nothing planned';
   if (reading.minutesToNextItem !== null) {
-    next = `Next: ${reading.nextItemTitle} in ${reading.minutesToNextItem} min`;
+    next = `Next: ${reading.nextItemTitle} in ${formatDuration(reading.minutesToNextItem)}`;
   }
-  setText('#today-status', `${next} · Updated ${formatTime(reading.time)} by the server timer (Event 01)`);
+  setText('#today-status', `${next} · Updated ${formatClock(reading.time)} by the server timer (Event 01)`);
 }
 
 function refreshAll() {
@@ -191,7 +184,7 @@ function refreshAll() {
   loadActivity();
 }
 
-// ---------- Form ----------
+// ---------- Form (inside the <dialog>) ----------
 function toggleTypeFields() {
   const isMeeting = fields.type.value === ITEM_TYPES.MEETING;
   document.querySelector('#location-field').hidden = !isMeeting;
@@ -204,6 +197,13 @@ function clearForm() {
   editingId = null;
   setText('#form-title', 'New item');
   toggleTypeFields();
+}
+
+// "+ New item" button: empty form in the dialog.
+function openNewItem() {
+  clearForm();
+  dialog.showModal(); // modal: the rest of the page cannot be clicked until it closes
+  fields.title.focus();
 }
 
 function readForm() {
@@ -230,7 +230,7 @@ async function saveItem() {
   try {
     await requestJson(url, options);
     showToast(isNew ? 'Item created.' : 'Item updated.', 'success');
-    clearForm(); // the table refreshes by itself when the SSE event arrives
+    dialog.close(); // the "close" event clears the form; the table refreshes by itself (SSE)
   } catch (error) {
     showToast(error.message, 'error');
   }
@@ -251,6 +251,7 @@ function editItem(id) {
   fields.durationMinutes.value = item.type === ITEM_TYPES.MEETING ? item.durationMinutes : 60;
   toggleTypeFields();
   setText('#form-title', `Editing: ${item.title}`);
+  dialog.showModal();
   fields.title.focus();
 }
 
@@ -263,7 +264,7 @@ async function deleteItem(id) {
     await requestJson(`/api/items/${id}`, { method: 'DELETE' });
     showToast('Item deleted.', 'success');
     if (editingId === id) {
-      clearForm();
+      dialog.close();
     }
   } catch (error) {
     showToast(error.message, 'error');
@@ -288,7 +289,7 @@ function setStatus(text, isLive) {
 
 function handleReminderDue(event) {
   const reminder = JSON.parse(event.data);
-  showToast(`Reminder: "${reminder.title}" at ${formatDate(reminder.date)}`, 'alert');
+  showToast(`Reminder: "${reminder.title}" at ${formatClock(reminder.date)}`, 'alert');
   loadActivity();
 }
 
@@ -312,7 +313,10 @@ function registerDomEvents() {
     event.preventDefault(); // no page reload
     saveItem();
   });
-  document.querySelector('#cancel-button').addEventListener('click', clearForm);
+  document.querySelector('#new-item-button').addEventListener('click', openNewItem);
+  document.querySelector('#cancel-button').addEventListener('click', () => dialog.close());
+  // Every way of closing the dialog (Save, Cancel, Esc) ends here.
+  dialog.addEventListener('close', clearForm);
   fields.type.addEventListener('change', toggleTypeFields);
 
   // Event delegation: one click listener for every Edit/Delete button.
@@ -337,13 +341,15 @@ function registerDomEvents() {
     }
   });
 
-  // [EVENT 03] Keyboard hotkeys: Ctrl/Cmd + S saves, Escape clears.
+  // [EVENT 03] Keyboard hotkeys: Ctrl/Cmd + S saves, Escape closes the dialog.
   document.addEventListener('keydown', (event) => {
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') {
       event.preventDefault(); // stop the browser "Save page" dialog
-      saveItem();
+      if (dialog.open) {
+        saveItem();
+      }
     } else if (event.key === 'Escape') {
-      clearForm();
+      dialog.close(); // the browser also closes a modal dialog with Esc
     }
   });
 

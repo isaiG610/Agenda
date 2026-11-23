@@ -1,7 +1,7 @@
 /* public/css/styles.css
    Dashboard styles for the Event-Driven Agenda.
-   Plain CSS: color variables, grid/flex layout, .focused (Event 05)
-   and .toast (alerts). System fonts only, so it works offline.
+   Plain CSS: color variables, grid/flex layout, the form <dialog>,
+   .focused (Event 05) and .toast (alerts). System fonts only, so it works offline.
    Rubric: GUI. No CSS frameworks. */
 
 /* ---------- Colors and shared values ---------- */
@@ -121,7 +121,8 @@ h1 {
 }
 
 /* ---------- Layout ---------- */
-/* Phones: one column. Bigger screens: see the end of this file. */
+/* Week view on top (full width). Below it: table + side column.
+   Phones and tablets: everything stacked. Wide screens: see the end of this file. */
 .layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -131,7 +132,15 @@ h1 {
   padding: 20px 0 48px;
 }
 
-.column {
+.lower {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: 20px;
+}
+
+/* Right column under the week view: 7-day chart and recent activity. */
+.side {
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -146,18 +155,36 @@ h1 {
   box-shadow: 0 1px 2px rgba(27, 34, 48, 0.05);
 }
 
-/* A heading with something on its right (used by the chart). */
+/* A heading with something on its right (a button or the counters). */
 .card-header {
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
   gap: 8px 24px;
   margin-bottom: 16px;
 }
 
 .card-header h2 {
   margin-bottom: 0;
+}
+
+/* ---------- Form dialog ---------- */
+/* <dialog> opened with showModal() by "+ New item" and "Edit". */
+dialog {
+  width: min(460px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 20px 48px rgba(27, 34, 48, 0.25);
+}
+
+/* The dark layer behind the dialog. */
+dialog::backdrop {
+  background: rgba(27, 34, 48, 0.5);
 }
 
 /* ---------- Form ---------- */
@@ -282,22 +309,21 @@ button.danger:hover {
   background: var(--danger-soft);
 }
 
-/* ---------- Today timeline (Event 01) ---------- */
-/* A stronger border than the other cards: it is the part that changes by itself. */
-.today {
+/* ---------- Week view: the main panel (Events 01 and 04) ---------- */
+/* A stronger border and a bigger title: it is the most important part of the page. */
+.week {
   border: 2px solid var(--ink);
 }
 
-.card-meta {
-  color: var(--muted);
-  font-size: 0.95rem;
+.week h2 {
+  font-size: 1.5rem;
 }
 
-/* "Next: ... · Updated ... by the server timer" line under the timeline. */
-.today-status {
-  margin: 12px 0 0;
+/* "Next: ... · Updated ... by the server timer" line under the week view. */
+.status-line {
+  margin: 14px 0 0;
   color: var(--muted);
-  font-size: 0.875rem;
+  font-size: 0.95rem;
   font-variant-numeric: tabular-nums;
 }
 
@@ -349,7 +375,7 @@ table {
 }
 
 th {
-  padding: 10px 12px;
+  padding: 10px 8px;
   border-bottom: 1px solid var(--ink);
   color: var(--muted);
   font-size: 0.75rem;
@@ -360,7 +386,7 @@ th {
 }
 
 td {
-  padding: 12px;
+  padding: 10px 8px;
   border-bottom: 1px solid var(--line);
   vertical-align: middle;
 }
@@ -374,8 +400,15 @@ tbody tr:hover {
   background: var(--primary-soft);
 }
 
+/* Smaller Edit/Delete buttons, so the table has more room for text. */
+td button {
+  min-height: 32px;
+  padding: 0 10px;
+  font-size: 0.85rem;
+}
+
 td button + button {
-  margin-left: 6px;
+  margin-left: 4px;
 }
 
 .badge {
@@ -438,13 +471,19 @@ canvas {
   height: auto;
 }
 
-/* On phones the charts keep a readable size and scroll sideways. */
+/* On small screens the charts keep a readable size and scroll sideways. */
 .chart-scroll {
   overflow-x: auto;
 }
 
-.chart-scroll canvas {
-  min-width: 600px;
+.week-chart {
+  min-width: 900px;
+}
+
+.bar-chart {
+  min-width: 480px;
+  max-width: 640px; /* do not grow huge when the cards are stacked */
+  margin: 0 auto;
 }
 
 .tooltip {
@@ -524,26 +563,19 @@ canvas {
   }
 }
 
-/* ---------- Tablets and small projectors (760px to 1199px) ---------- */
-/* Kept at the end so these rules win over the ones above.
-   The form and the activity log sit side by side; live data goes below. */
+/* ---------- Tablets (760px and more) ---------- */
+/* Kept at the end so these rules win over the ones above. */
 @media (min-width: 760px) {
-  .column:first-child {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    align-items: start;
-  }
-
-  /* There is enough room, so the table and charts fit without scrolling. */
+  /* There is enough room, so the table and the bar chart fit without scrolling. */
   table,
-  .chart-scroll canvas {
+  .bar-chart {
     min-width: 0;
   }
 }
 
-/* ---------- Wide screens (1200px and more) ---------- */
-/* Form on the left, live data on the right. */
-@media (min-width: 1200px) {
+/* ---------- Wide screens (1100px and more) ---------- */
+/* Table (60%) next to the chart and the activity (40%). */
+@media (min-width: 1100px) {
   body {
     padding: 0 32px;
   }
@@ -554,20 +586,12 @@ canvas {
   }
 
   .layout {
-    grid-template-columns: 340px minmax(0, 1fr);
-    align-items: start;
     padding-top: 24px;
     padding-bottom: 64px;
   }
 
-  /* Back to a simple stack (undo the tablet grid above). */
-  .column:first-child {
-    display: flex;
-    align-items: stretch;
+  .lower {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
   }
 
-  /* Keep the date on one line (3rd column). */
-  td:nth-child(3) {
-    white-space: nowrap;
-  }
 }

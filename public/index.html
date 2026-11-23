@@ -2,9 +2,10 @@
 <!--
   public/index.html
   The dashboard page. No inline JavaScript: all behavior lives in js/app.js.
-  Layout: left column = input (form) and history (activity),
-          right column = live output (today timeline, table, chart).
-  Rubric: GUI (form, table, charts, counters, today timeline, activity, alerts).
+  Layout: the week view is the main panel (top, full width).
+          Below it: the items table (left) and the 7-day chart + recent activity (right).
+          The form lives in a <dialog> opened with "+ New item" or "Edit".
+  Rubric: GUI (form, table, charts, counters, week view, activity, alerts).
 -->
 <html lang="en">
 <head>
@@ -24,66 +25,20 @@
   </header>
 
   <main class="layout">
-    <div class="column">
-      <!-- Form: create and edit items (Event 05 highlights it on focus) -->
-      <section class="card" aria-labelledby="form-title">
-        <h2 id="form-title">New item</h2>
-        <form id="item-form" novalidate>
-          <label>Type
-            <select id="type">
-              <option value="meeting">Meeting</option>
-              <option value="reminder">Reminder</option>
-            </select>
-          </label>
-          <label>Title
-            <input id="title" type="text" maxlength="100" placeholder="e.g. Team sync">
-          </label>
-          <label>Date and time
-            <input id="date" type="datetime-local">
-          </label>
-          <label id="location-field">Location
-            <input id="location" type="text" maxlength="100" placeholder="e.g. Library, room 2">
-          </label>
-          <label id="duration-field">Duration (minutes)
-            <input id="durationMinutes" type="number" min="1" step="1" value="60">
-          </label>
-          <label id="minutes-field" hidden>Alert minutes before
-            <input id="minutesBefore" type="number" min="0" step="1" value="10">
-          </label>
-          <label>Description
-            <textarea id="description" rows="3" placeholder="Optional"></textarea>
-          </label>
-          <div class="form-buttons">
-            <button type="submit" class="primary">Save</button>
-            <button type="button" id="cancel-button">Cancel</button>
-          </div>
-          <p class="hint"><kbd>Ctrl</kbd>/<kbd>Cmd</kbd> + <kbd>S</kbd> to save, <kbd>Esc</kbd> to cancel</p>
-        </form>
-      </section>
+    <!-- MAIN PANEL: week view, redrawn on every timer tick (Event 01) and CRUD event (Event 10) -->
+    <section class="card week" aria-labelledby="today-title">
+      <div class="card-header">
+        <h2 id="today-title">Today</h2>
+        <button type="button" id="new-item-button" class="primary">+ New item</button>
+      </div>
+      <div class="chart-scroll">
+        <canvas id="timeline-chart" class="week-chart" width="1200" height="454" role="img"
+          aria-label="This week's meetings and reminders, one row per day"></canvas>
+      </div>
+      <p id="today-status" class="status-line">Waiting for the first reading from the server timer…</p>
+    </section>
 
-      <!-- Recent activity (Stack, newest first) -->
-      <section class="log" aria-labelledby="activity-title">
-        <h2 id="activity-title">Recent activity</h2>
-        <ul id="activity-list" class="small-list">
-          <li>No activity yet.</li>
-        </ul>
-      </section>
-    </div>
-
-    <div class="column">
-      <!-- Today timeline: redrawn on every timer tick (Event 01) and CRUD event (Event 10) -->
-      <section class="card today" aria-labelledby="today-title">
-        <div class="card-header">
-          <h2 id="today-title">Today</h2>
-          <span id="today-date" class="card-meta">-</span>
-        </div>
-        <div class="chart-scroll">
-          <canvas id="timeline-chart" width="800" height="90" role="img"
-            aria-label="Timeline of today's meetings and reminders"></canvas>
-        </div>
-        <p id="today-status" class="today-status">Waiting for the first reading from the server timer…</p>
-      </section>
-
+    <div class="lower">
       <!-- Items table (event delegation in app.js) -->
       <section class="card" aria-labelledby="table-title">
         <h2 id="table-title">Agenda items</h2>
@@ -100,27 +55,73 @@
         <p id="details-bar" class="details-bar">Hover a row to see its details.</p>
       </section>
 
-      <!-- Canvas chart (Event 04: mouse tooltip) + counters (worker stats) -->
-      <section class="card" aria-labelledby="chart-title">
-        <div class="card-header">
-          <h2 id="chart-title">Items in the next 7 days</h2>
-          <div class="counters">
-            <div class="counter">
-              <span id="meeting-count" class="counter-value">0</span>
-              <span class="counter-label">Meetings</span>
-            </div>
-            <div class="counter reminder">
-              <span id="reminder-count" class="counter-value">0</span>
-              <span class="counter-label">Reminders</span>
+      <div class="side">
+        <!-- Canvas chart (Event 04: mouse tooltip) + counters (worker stats) -->
+        <section class="card" aria-labelledby="chart-title">
+          <div class="card-header">
+            <h2 id="chart-title">Items in the next 7 days</h2>
+            <div class="counters">
+              <div class="counter">
+                <span id="meeting-count" class="counter-value">0</span>
+                <span class="counter-label">Meetings</span>
+              </div>
+              <div class="counter reminder">
+                <span id="reminder-count" class="counter-value">0</span>
+                <span class="counter-label">Reminders</span>
+              </div>
             </div>
           </div>
-        </div>
-        <div class="chart-scroll">
-          <canvas id="stats-chart" width="800" height="300"></canvas>
-        </div>
-      </section>
+          <div class="chart-scroll">
+            <canvas id="stats-chart" class="bar-chart" width="560" height="300"></canvas>
+          </div>
+        </section>
+
+        <!-- Recent activity (Stack, newest first) -->
+        <section class="log" aria-labelledby="activity-title">
+          <h2 id="activity-title">Recent activity</h2>
+          <ul id="activity-list" class="small-list">
+            <li>No activity yet.</li>
+          </ul>
+        </section>
+      </div>
     </div>
   </main>
+
+  <!-- Form: create and edit items inside a modal dialog (Event 05 highlights it on focus) -->
+  <dialog id="item-dialog" aria-labelledby="form-title">
+    <h2 id="form-title">New item</h2>
+    <form id="item-form" novalidate>
+      <label>Type
+        <select id="type">
+          <option value="meeting">Meeting</option>
+          <option value="reminder">Reminder</option>
+        </select>
+      </label>
+      <label>Title
+        <input id="title" type="text" maxlength="100" placeholder="e.g. Team sync">
+      </label>
+      <label>Date and time
+        <input id="date" type="datetime-local">
+      </label>
+      <label id="location-field">Location
+        <input id="location" type="text" maxlength="100" placeholder="e.g. Library, room 2">
+      </label>
+      <label id="duration-field">Duration (minutes)
+        <input id="durationMinutes" type="number" min="1" step="1" value="60">
+      </label>
+      <label id="minutes-field" hidden>Alert minutes before
+        <input id="minutesBefore" type="number" min="0" step="1" value="10">
+      </label>
+      <label>Description
+        <textarea id="description" rows="3" placeholder="Optional"></textarea>
+      </label>
+      <div class="form-buttons">
+        <button type="submit" class="primary">Save</button>
+        <button type="button" id="cancel-button">Cancel</button>
+      </div>
+      <p class="hint"><kbd>Ctrl</kbd>/<kbd>Cmd</kbd> + <kbd>S</kbd> to save, <kbd>Esc</kbd> to cancel</p>
+    </form>
+  </dialog>
 
   <div id="chart-tooltip" class="tooltip" hidden></div>
   <div id="toast-container" class="toast-container" aria-live="polite"></div>
