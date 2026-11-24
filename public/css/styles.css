@@ -287,6 +287,16 @@ button:hover {
   background: var(--paper);
 }
 
+/* A disabled button (e.g. "Today" when this week is already shown). */
+button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+button:disabled:hover {
+  background: var(--surface);
+}
+
 button.primary {
   min-height: 40px;
   border-color: var(--primary);
@@ -317,6 +327,23 @@ button.danger:hover {
 
 .week h2 {
   font-size: 1.5rem;
+}
+
+/* Right side of the week header: week navigation + "+ New item". */
+.week-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.week-nav {
+  display: flex;
+  gap: 6px;
+}
+
+.week-nav button {
+  min-height: 40px;
 }
 
 /* "Next: ... · Updated ... by the server timer" line under the week view. */
@@ -497,6 +524,33 @@ canvas {
   font-weight: 600;
   pointer-events: none;
   box-shadow: 0 4px 12px rgba(27, 34, 48, 0.2);
+}
+
+/* Tooltip of the week view: several lines, normal weight, max 320px wide. */
+.week-tooltip {
+  max-width: 320px;
+  padding: 10px 12px;
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+.week-tooltip strong {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 0.95rem;
+}
+
+.week-tooltip p {
+  margin: 2px 0 0;
+}
+
+.week-tooltip ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+}
+
+.tooltip-muted {
+  color: #c3c9d4; /* light gray: readable on the dark tooltip */
 }
 
 /* ---------- Toasts (alerts) ---------- */

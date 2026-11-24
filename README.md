@@ -14,13 +14,13 @@ Course: *Programación Orientada a Eventos* (IH050), 3rd semester, Computer Scie
 - Create, view, edit and delete two kinds of items:
   - **Activity**: title, date/time, duration (minutes), location, description.
   - **Reminder**: title, date/time, minutes before, description. It fires a real-time alert when `now >= date - minutesBefore`.
-- Live dashboard (no page reloads). The main panel is a **week view** drawn on a canvas: one row per day (Mon to Sun), activities as bars with their title, reminders as diamonds, today's row highlighted with a red "Now" line. Below it: the items table, a canvas bar chart (items per day, next 7 days) with counters, and the recent activity. Pop-up alerts for reminders.
+- Live dashboard (no page reloads). The main panel is a **week view** drawn on a canvas: one row per day (Mon to Sun), activities as bars with their title, reminders as diamonds, today's row highlighted with a red "Now" line. The hour axis fits the visible week, and **‹ Prev / Today / Next ›** (or the ← → keys) move between weeks. Hovering a bar or diamond shows a tooltip with all the details, including the description (several lines become a bulleted list). Below it: the items table, a canvas bar chart (items per day, next 7 days) with counters, and the recent activity. Pop-up alerts for reminders.
 - The form opens in a modal dialog ("+ New item" button, or "Edit" in the table).
 - Times without seconds (`10:41 PM`) and durations as `HH:MM hrs` (`02:00 hrs`) on the whole page.
 - Server timer that generates a **reading** every 10 seconds; each reading moves the "Now" line and updates the "Next" line.
 - Data stored in MySQL; every action written to `logs/audit.log`.
 - Works in several browser tabs at the same time (Server-Sent Events).
-- Keyboard shortcuts: `Ctrl/Cmd + S` saves the open dialog, `Esc` closes it.
+- Keyboard shortcuts: `Ctrl/Cmd + S` saves the open dialog, `Esc` closes it, `←` / `→` change the week (when the dialog is closed).
 
 ## Live demo script
 
@@ -44,7 +44,7 @@ Follow these steps in order during the presentation:
 4. **Tables / charts rendering** – open a second tab: after each create/edit/delete, both tabs re-render the week view, the table, the 7-day chart, the counters and the recent activity automatically.
 5. **Threshold alert** – create a reminder 3 minutes ahead with "Alert minutes before" = 5. Within ~10 s a pop-up appears (only once) and the server console prints `[ALERT] ...`.
 6. **Errors** – save with an empty title: a clear red message appears and the server keeps running.
-7. **GUI events** – hover a bar or diamond in the week view (tooltip with title, start–end time and location or alert), hover the 7-day chart (tooltip), hover a table row (details bar), click inside the form of the dialog (blue highlight), press `Esc` (closes the dialog and clears the form).
+7. **GUI events** – press `→` and `←` (or the **‹ Prev / Today / Next ›** buttons) to move between weeks: the title changes to "Week of …", the hour axis adapts to that week and today's row is only highlighted in the current week. Hover a bar or diamond in the week view (multi-line tooltip: title, type, day and time with duration, location or alert, and the description as a bulleted list), hover the 7-day chart (tooltip), hover a table row (details bar), click inside the form of the dialog (blue highlight), press `Esc` (closes the dialog and clears the form).
 
 ## Tech stack
 
@@ -120,8 +120,8 @@ flowchart LR
 |---|---|---|
 | 01 | Timer / Polling | `reminderTimer.js` `setInterval` → `TIMER_TICK` (reading: moves the "Now" line and updates "Next" in the week view) + `REMINDER_DUE` |
 | 02 | System Load | `server.js` `startServer()` → `SERVER_READY`; browser `DOMContentLoaded` |
-| 03 | Keyboard hotkeys | `app.js`: `Ctrl/Cmd + S` saves the form while the dialog is open, `Escape` closes the dialog |
-| 04 | Mouse tracking | `timeline.js` and `chart.js`: `mousemove` on the canvas → tooltip; `mouseover` on table rows → details bar |
+| 03 | Keyboard hotkeys | `app.js`: `Ctrl/Cmd + S` saves the form while the dialog is open, `Escape` closes the dialog, `←` / `→` change the week (only with the dialog closed and when not typing) |
+| 04 | Mouse tracking | `timeline.js`: `mousemove` on the week view → HTML tooltip (several lines, built with `textContent`); `chart.js`: `mousemove` → tooltip; `mouseover` on table rows → details bar |
 | 05 | Focus / Blur | `app.js`: `focusin` / `focusout` highlight the form inside the dialog; `visibilitychange` reloads data |
 | 06 | Destroy / Cleanup | `server.js` `SIGINT` → `APP_SHUTDOWN`, stop timer, close SSE clients, close DB pool |
 | 08 | Custom threshold alert | `REMINDER_DUE` (time left <= `minutesBefore`), `Reminder.isDue()` |
@@ -148,7 +148,11 @@ Events with **multiple handlers**: `ITEM_CREATED` → audit + ui; `REMINDER_DUE`
 | `mysql2` with raw SQL | ORM (Sequelize, Prisma) | We see and control the SQL; `?` placeholders prevent SQL injection. |
 | `Map` cache in the service | Query MySQL every time | Fast lookups by id; the timer does not query the database every 10 s. |
 | Server-Sent Events | WebSockets / Socket.io, polling | We only need server → browser; SSE is native in Node and the browser, no library. |
-| Hand-made canvas charts (timeline and bars) | Chart.js, a calendar library | Works offline in class and shows our own mouse events. |
+| Hand-made canvas charts (week view and bars) | Chart.js, a calendar library | Works offline in class and shows our own mouse events. |
+| "Activity" for items that take time | "Event", or a name that only fits one kind of item | A class, a practice and a dinner are all activities. We avoid "event" because in this course an *event* is something the program reacts to. |
+| Week navigation in the browser | A new API route per week | `/api/items` already sends every item, so `‹ Prev / Next ›` only redraws the canvas with another `weekOffset`. |
+| Hour axis from the visible week (`getHourRange`) | A fixed 6 AM–12 AM axis | Bars use the space better; a 6-hour minimum avoids giant bars and the current hour is always included, so "Now" is visible. |
+| HTML tooltip over the canvas | Text drawn on the canvas | HTML can wrap lines and show a list; `textContent` keeps user text safe. |
 | `getEndDate()` in the models | Computing the end time in the browser | Polymorphism: `AgendaItem` returns the start date, `Activity` overrides it with start + `durationMinutes`; `toJSON()` sends `endDate` so the browser only draws. |
 | Worker thread for statistics | Compute in the main thread | Heavy work leaves the main event loop free. |
 | `Queue`, `Stack`, `Set` | Plain arrays | Queue: log lines are written one by one, in order. Stack: newest activity first (max 10). Set: a reminder alerts only once, and each SSE client is stored once. |
@@ -228,5 +232,5 @@ Every item in the responses also has `endDate` (same format as `date`).
 | `src/utils/dateUtils.js` | `toLocalDateString()` for `datetime-local` inputs |
 | `public/js/app.js` | Dashboard logic (DOM, fetch, SSE, hotkeys, focus) |
 | `public/js/chart.js` | 7-day canvas chart and tooltip |
-| `public/js/timeline.js` | Week view (canvas, one row per day) and tooltip |
+| `public/js/timeline.js` | Week view (canvas, one row per day), `getHourRange()`, `getWeekDays()` and the HTML tooltip |
 | `public/js/format.js` | `formatClock()`, `formatDate()`, `formatDuration()` (`HH:MM hrs`) |

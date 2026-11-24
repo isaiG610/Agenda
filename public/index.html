@@ -29,11 +29,19 @@
     <section class="card week" aria-labelledby="today-title">
       <div class="card-header">
         <h2 id="today-title">Today</h2>
-        <button type="button" id="new-item-button" class="primary">+ New item</button>
+        <div class="week-actions">
+          <!-- Week navigation (also with the ← and → keys, Event 03) -->
+          <div class="week-nav" role="group" aria-label="Change week">
+            <button type="button" id="prev-week">‹ Prev</button>
+            <button type="button" id="this-week">Today</button>
+            <button type="button" id="next-week">Next ›</button>
+          </div>
+          <button type="button" id="new-item-button" class="primary">+ New item</button>
+        </div>
       </div>
       <div class="chart-scroll">
         <canvas id="timeline-chart" class="week-chart" width="1200" height="454" role="img"
-          aria-label="This week's activities and reminders, one row per day"></canvas>
+          aria-label="Activities and reminders of the visible week, one row per day"></canvas>
       </div>
       <p id="today-status" class="status-line">Waiting for the first reading from the server timer…</p>
     </section>
@@ -124,6 +132,7 @@
   </dialog>
 
   <div id="chart-tooltip" class="tooltip" hidden></div>
+  <div id="week-tooltip" class="tooltip week-tooltip" hidden></div>
   <div id="toast-container" class="toast-container" aria-live="polite"></div>
 </body>
 </html>

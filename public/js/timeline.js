@@ -1,16 +1,16 @@
 // public/js/timeline.js
 // ------------------------------------------------------------
 // Week view drawn by hand on a <canvas>: one ROW per day of the
-// current week (Mon to Sun), hours on the horizontal axis.
+// visible week (Mon to Sun), hours on the horizontal axis.
 // Activity = bar from start to end with its title inside.
 // Reminder = diamond at its time with its title next to it.
 // Today's row is highlighted and has the red "Now" line.
-// Plus our own tooltip that follows the mouse.
+// Plus an HTML tooltip that follows the mouse (it can have several lines).
 // Rubric: charts rendering, Event 01 (redrawn on every timer tick)
 // and Event 04 (mouse tracking).
 // ------------------------------------------------------------
 
-import { formatClock, formatDuration } from './format.js';
+import { formatClock, formatDay, formatDuration } from './format.js';
 
 const LABEL_WIDTH = 96; // space for "Mon 23" on the left
 const AXIS_HEIGHT = 34; // space for the hour labels on top
@@ -21,6 +21,8 @@ const DIAMOND_SIZE = 10;
 const MIN_LETTERS_INSIDE = 3; // if fewer letters fit inside the bar, the title goes outside
 const DAYS_IN_WEEK = 7;
 const MS_PER_HOUR = 3600000;
+const MIN_HOURS_SHOWN = 6; // so a short week does not show giant bars
+const EMPTY_WEEK_RANGE = { firstHour: 8, lastHour: 20 }; // 8 AM to 8 PM
 const ACTIVITY_TYPE = 'activity'; // same value as ITEM_TYPES.ACTIVITY in app.js
 
 // Same colors as styles.css (strong enough to read on a projector).
@@ -35,14 +37,22 @@ const TODAY_COLOR = '#e9eefc';
 // Remembers where each bar/diamond was drawn, so mousemove can find it.
 let shapes = [];
 
-// The 7 days of the current week, starting on Monday (each at midnight).
-function getWeekDays(now) {
+// The 7 days of a week, starting on Monday (each at midnight).
+// weekOffset: 0 = this week, -1 = last week, 1 = next week...
+export function getWeekDays(now, weekOffset = 0) {
   const daysSinceMonday = (now.getDay() + 6) % 7; // getDay(): Sunday = 0
+  const firstDay = now.getDate() - daysSinceMonday + weekOffset * DAYS_IN_WEEK;
   const days = [];
   for (let i = 0; i < DAYS_IN_WEEK; i++) {
-    days.push(new Date(now.getFullYear(), now.getMonth(), now.getDate() - daysSinceMonday + i));
+    days.push(new Date(now.getFullYear(), now.getMonth(), firstDay + i));
   }
   return days;
+}
+
+// Midnight of the same day as "date".
+function startOfDay(date) {
+  const day = new Date(date);
+  return new Date(day.getFullYear(), day.getMonth(), day.getDate());
 }
 
 // Hours between midnight of "day" and "date" (e.g. 15:30 → 15.5).
@@ -54,15 +64,32 @@ function isSameDay(day, date) {
   return new Date(date).toDateString() === day.toDateString();
 }
 
-// Default range 6 AM to 12 AM, wider if something this week starts earlier or ends later.
-function findHourRange(items, days) {
-  let firstHour = 6;
-  let lastHour = 24;
-  for (const day of days) {
-    for (const item of items.filter((element) => isSameDay(day, element.date))) {
-      firstHour = Math.min(firstHour, Math.floor(hoursSince(day, item.date)));
-      lastHour = Math.max(lastHour, Math.ceil(hoursSince(day, item.endDate)));
-    }
+// Hours shown on the axis, from the items of the VISIBLE week:
+// start = earliest start (rounded down), end = latest end (rounded up).
+// "now" is the current time if the visible week is this week (so the
+// "Now" line is always inside the range), or null for other weeks.
+// A week with nothing shows 8 AM to 8 PM (plus the current hour, if it is this week).
+export function getHourRange(items, now) {
+  let firstHour = 24;
+  let lastHour = 0;
+  if (items.length === 0) {
+    firstHour = EMPTY_WEEK_RANGE.firstHour;
+    lastHour = EMPTY_WEEK_RANGE.lastHour;
+  }
+  for (const item of items) {
+    const day = startOfDay(item.date);
+    firstHour = Math.min(firstHour, Math.floor(hoursSince(day, item.date)));
+    lastHour = Math.max(lastHour, Math.ceil(hoursSince(day, item.endDate)));
+  }
+  if (now !== null) {
+    const nowHours = hoursSince(startOfDay(now), now);
+    firstHour = Math.min(firstHour, Math.floor(nowHours));
+    lastHour = Math.max(lastHour, Math.ceil(nowHours));
+  }
+  // Minimum range: add hours at the end (up to midnight), then at the start.
+  if (lastHour - firstHour < MIN_HOURS_SHOWN) {
+    lastHour = Math.max(lastHour, Math.min(firstHour + MIN_HOURS_SHOWN, 24));
+    firstHour = lastHour - MIN_HOURS_SHOWN;
   }
   return { firstHour, lastHour };
 }
@@ -188,13 +215,15 @@ function drawNowLine(context, now, day, top, hourToX) {
   context.lineWidth = 1;
 }
 
-// Draws the current week. "now" decides which row is today and where "Now" goes.
-export function drawTimeline(canvas, items, now) {
+// Draws one week. weekOffset: 0 = this week, -1 = last week, 1 = next week...
+// "now" decides which row is today and where the "Now" line goes.
+export function drawTimeline(canvas, items, now, weekOffset = 0) {
   const context = canvas.getContext('2d');
-  const days = getWeekDays(now);
+  const days = getWeekDays(now, weekOffset);
+  const weekItems = items.filter((item) => days.some((day) => isSameDay(day, item.date)));
   canvas.height = AXIS_HEIGHT + DAYS_IN_WEEK * ROW_HEIGHT; // also clears the canvas
   shapes = [];
-  const range = findHourRange(items, days);
+  const range = getHourRange(weekItems, weekOffset === 0 ? now : null);
   const pixelsPerHour = (canvas.width - LABEL_WIDTH - RIGHT_SPACE) / (range.lastHour - range.firstHour);
   const hourToX = (hour) => LABEL_WIDTH + (hour - range.firstHour) * pixelsPerHour;
 
@@ -204,7 +233,7 @@ export function drawTimeline(canvas, items, now) {
   drawHourGrid(context, canvas, range, hourToX);
   for (let i = 0; i < days.length; i++) {
     const top = AXIS_HEIGHT + i * ROW_HEIGHT;
-    for (const item of items.filter((element) => isSameDay(days[i], element.date))) {
+    for (const item of weekItems.filter((element) => isSameDay(days[i], element.date))) {
       if (item.type === ACTIVITY_TYPE) {
         drawActivity(context, canvas, item, days[i], top, hourToX);
       } else {
@@ -217,12 +246,71 @@ export function drawTimeline(canvas, items, now) {
   }
 }
 
-// Activity: 'Title · 3:00 PM – 5:00 PM · Room'. Reminder: 'Title · 9:30 PM · Alert 00:15 hrs before'.
-function tooltipText(item) {
+// ---------- HTML tooltip ----------
+// Adds one child element with plain text. textContent (not innerHTML),
+// so text written by the user is never run as HTML.
+function addText(parent, tagName, text) {
+  const element = document.createElement(tagName);
+  element.textContent = text;
+  parent.appendChild(element);
+  return element;
+}
+
+// Activity: 'Mon, Nov 23 · 3:00 PM – 5:00 PM (02:00 hrs)'. Reminder: 'Mon, Nov 23 · 9:30 PM'.
+function whenText(item) {
+  const start = `${formatDay(item.date)} · ${formatClock(item.date)}`;
   if (item.type === ACTIVITY_TYPE) {
-    return `${item.title} · ${formatClock(item.date)} – ${formatClock(item.endDate)} · ${item.location}`;
+    return `${start} – ${formatClock(item.endDate)} (${formatDuration(item.durationMinutes)})`;
   }
-  return `${item.title} · ${formatClock(item.date)} · Alert ${formatDuration(item.minutesBefore)} before`;
+  return start;
+}
+
+// One line → a paragraph. Several lines → a bulleted list. Empty → "No description".
+function addDescription(tooltip, description) {
+  const lines = []; // the non-empty lines, without spaces at the ends
+  for (const line of description.split('\n')) {
+    if (line.trim() !== '') {
+      lines.push(line.trim());
+    }
+  }
+  if (lines.length === 0) {
+    addText(tooltip, 'p', 'No description').className = 'tooltip-muted';
+  } else if (lines.length === 1) {
+    addText(tooltip, 'p', lines[0]);
+  } else {
+    const list = document.createElement('ul');
+    for (const line of lines) {
+      addText(list, 'li', line);
+    }
+    tooltip.appendChild(list);
+  }
+}
+
+function fillTooltip(tooltip, item) {
+  tooltip.replaceChildren(); // remove what the last item wrote
+  addText(tooltip, 'strong', item.title);
+  addText(tooltip, 'p', item.type === ACTIVITY_TYPE ? 'Activity' : 'Reminder').className = 'tooltip-muted';
+  addText(tooltip, 'p', whenText(item));
+  if (item.type === ACTIVITY_TYPE) {
+    addText(tooltip, 'p', item.location);
+  } else {
+    addText(tooltip, 'p', `Alert ${formatDuration(item.minutesBefore)} before`);
+  }
+  addDescription(tooltip, item.description);
+}
+
+// Next to the mouse; if it does not fit on the right (or below), it goes to the other side.
+function placeTooltip(tooltip, mouseX, mouseY) {
+  let left = mouseX + 14;
+  let top = mouseY + 14;
+  if (left + tooltip.offsetWidth > window.innerWidth - 8) {
+    left = mouseX - tooltip.offsetWidth - 14;
+  }
+  if (top + tooltip.offsetHeight > window.innerHeight - 8) {
+    top = mouseY - tooltip.offsetHeight - 14;
+  }
+  tooltip.style.left = `${left}px`;
+  tooltip.style.top = `${top}px`;
 }
 
 // Searches from the last shape drawn, because it is the one on top.
@@ -240,6 +328,7 @@ function findShape(mouseX, mouseY) {
 
 // [EVENT 04] Mouse tracking: mousemove shows the tooltip, mouseleave hides it.
 export function enableTimelineTooltip(canvas, tooltip) {
+  let shownItem = null; // the item in the tooltip now, so we only rebuild it when it changes
   canvas.addEventListener('mousemove', (event) => {
     // The canvas is scaled by CSS, so we convert screen pixels to canvas pixels.
     const rect = canvas.getBoundingClientRect();
@@ -248,15 +337,19 @@ export function enableTimelineTooltip(canvas, tooltip) {
     const shape = findShape(mouseX, mouseY);
     if (shape === null) {
       tooltip.hidden = true;
+      shownItem = null;
       return;
     }
-    tooltip.textContent = tooltipText(shape.item);
-    tooltip.style.left = `${event.clientX + 14}px`;
-    tooltip.style.top = `${event.clientY + 14}px`;
-    tooltip.hidden = false;
+    if (shape.item !== shownItem) {
+      fillTooltip(tooltip, shape.item);
+      shownItem = shape.item;
+    }
+    tooltip.hidden = false; // visible first, so offsetWidth/offsetHeight are real
+    placeTooltip(tooltip, event.clientX, event.clientY);
   });
 
   canvas.addEventListener('mouseleave', () => {
     tooltip.hidden = true;
+    shownItem = null;
   });
 }

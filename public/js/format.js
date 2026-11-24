@@ -22,8 +22,12 @@ export function formatClock(value) {
   return new Date(value).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 }
 
+// A date (or date text) → 'Mon, Nov 23'.
+export function formatDay(value) {
+  return new Date(value).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
 // A date (or date text) → 'Mon, Nov 23 · 3:00 PM' (used in the table).
 export function formatDate(value) {
-  const day = new Date(value).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-  return `${day} · ${formatClock(value)}`;
+  return `${formatDay(value)} · ${formatClock(value)}`;
 }

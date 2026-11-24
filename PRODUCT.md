@@ -51,13 +51,17 @@ The interface works as an event monitor: it makes the event flow behind each upd
 ## Capabilities and Constraints
 
 - Dashboard regions: main **week view** panel at the top (hand-drawn canvas, one row per day of
-  the current week, activities as titled bars, reminders as diamonds, today's row highlighted with
-  a "Now" line, tooltip, "+ New item" button and a "Next … · Updated … by the server timer"
-  line); below it the items table with Edit/Delete and a hover details bar (left) and the
+  the visible week, activities as titled bars, reminders as diamonds, today's row highlighted with
+  a "Now" line, hour axis fitted to the visible week, ‹ Prev / Today / Next › navigation and ← →
+  keys, multi-line HTML tooltip with the description, "+ New item" button and a "Next … ·
+  Updated … by the server timer" line); below it the items table with Edit/Delete and a hover details bar (left) and the
   7-day canvas bar chart with activity/reminder counters plus the Recent activity list (right);
   the item form in a modal dialog (type-dependent location / duration / minutes-before
   fields, Save, Cancel, hotkey hint); toast alerts; connection status.
 - Time formats: clock times without seconds (`10:41 PM`), durations as `HH:MM hrs`.
+- Terminology: the two item types are **Activity** (anything that takes time: class, practice,
+  dinner) and **Reminder**. Never call agenda items "events": in this course an event is
+  something the program reacts to.
 - Fixed stack: Node.js 20+ ES Modules, Express 5, mysql2, dotenv. Frontend is plain HTML, CSS
   and browser-module JavaScript. **No other libraries**: no CSS framework, UI framework,
   chart library, icon library or bundler.
