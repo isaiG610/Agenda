@@ -16,12 +16,15 @@
   <script type="module" src="js/app.js"></script>
 </head>
 <body>
+  <!-- Full-width brand band; .header-inner keeps the content aligned with the page -->
   <header class="page-header">
-    <div>
-      <h1>Event-Driven Agenda</h1>
-      <p class="subtitle">POE IH050 · Activities and reminders updated in real time</p>
+    <div class="header-inner">
+      <div>
+        <h1>Event-Driven Agenda</h1>
+        <p class="subtitle">POE IH050 · Activities and reminders updated in real time</p>
+      </div>
+      <span id="connection-status" class="status">Connecting…</span>
     </div>
-    <span id="connection-status" class="status">Connecting…</span>
   </header>
 
   <main class="layout">

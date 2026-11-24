@@ -24,15 +24,27 @@ const MS_PER_HOUR = 3600000;
 const MIN_HOURS_SHOWN = 6; // so a short week does not show giant bars
 const EMPTY_WEEK_RANGE = { firstHour: 8, lastHour: 20 }; // 8 AM to 8 PM
 const ACTIVITY_TYPE = 'activity'; // same value as ITEM_TYPES.ACTIVITY in app.js
+const FONT = '"Atkinson Hyperlegible Next", system-ui, sans-serif'; // same font as styles.css
+
+// [GUI] Each activity gets a color from this fixed jewel palette, chosen by its id:
+// PALETTE[item.id % PALETTE.length]. "text" is the title color inside the bar:
+// white on dark colors, dark ink on light ones (amber, turquoise), for contrast.
+const PALETTE = [
+  { name: 'sapphire', fill: '#1f4fbf', text: '#ffffff' },
+  { name: 'emerald', fill: '#0b7a56', text: '#ffffff' },
+  { name: 'coral', fill: '#c4462f', text: '#ffffff' },
+  { name: 'amber', fill: '#f2ad33', text: '#172033' },
+  { name: 'magenta', fill: '#a3236b', text: '#ffffff' },
+  { name: 'turquoise', fill: '#3cc2bf', text: '#172033' },
+];
 
 // Same colors as styles.css (strong enough to read on a projector).
-const ACTIVITY_COLOR = '#2448c4';
-const REMINDER_COLOR = '#94500a';
-const NOW_COLOR = '#b42318';
-const TEXT_COLOR = '#1b2230';
-const MUTED_COLOR = '#5d6573';
-const GRID_COLOR = '#d6dae1';
-const TODAY_COLOR = '#e9eefc';
+const REMINDER_COLOR = '#5b30b0'; // amethyst: reminders only
+const NOW_COLOR = '#c8102e';
+const TEXT_COLOR = '#172033';
+const MUTED_COLOR = '#545e72';
+const GRID_COLOR = '#d8deea';
+const TODAY_COLOR = '#e7edfb';
 
 // Remembers where each bar/diamond was drawn, so mousemove can find it.
 let shapes = [];
@@ -53,6 +65,11 @@ export function getWeekDays(now, weekOffset = 0) {
 function startOfDay(date) {
   const day = new Date(date);
   return new Date(day.getFullYear(), day.getMonth(), day.getDate());
+}
+
+// The color of one activity: always the same for the same id.
+function getActivityColor(item) {
+  return PALETTE[item.id % PALETTE.length];
 }
 
 // Hours between midnight of "day" and "date" (e.g. 15:30 → 15.5).
@@ -117,7 +134,7 @@ function fitText(context, text, maxWidth) {
 function drawHourGrid(context, canvas, range, hourToX) {
   const pixelsPerHour = hourToX(range.firstHour + 1) - hourToX(range.firstHour);
   const labelEvery = pixelsPerHour >= 56 ? 1 : 2; // fewer labels if the hours are narrow
-  context.font = '14px system-ui, sans-serif';
+  context.font = `14px ${FONT}`;
   context.textAlign = 'center';
   context.strokeStyle = GRID_COLOR;
   context.lineWidth = 1;
@@ -146,7 +163,7 @@ function drawDayRow(context, canvas, day, top, isToday) {
   context.lineTo(canvas.width, top + ROW_HEIGHT);
   context.stroke();
   const weekday = day.toLocaleDateString('en-US', { weekday: 'short' });
-  context.font = isToday ? 'bold 16px system-ui, sans-serif' : '16px system-ui, sans-serif';
+  context.font = isToday ? `bold 16px ${FONT}` : `16px ${FONT}`;
   context.textAlign = 'left';
   context.fillStyle = TEXT_COLOR;
   context.fillText(`${weekday} ${day.getDate()}`, 12, top + ROW_HEIGHT / 2 + 6);
@@ -159,20 +176,22 @@ function drawActivity(context, canvas, item, day, top, hourToX) {
   const endX = hourToX(hoursSince(day, item.endDate));
   const width = Math.max(endX - startX, 4);
   const textY = top + ROW_HEIGHT / 2 + 5;
-  context.globalAlpha = 0.88; // a little transparent, so overlapping bars can be seen
-  context.fillStyle = ACTIVITY_COLOR;
+  const color = getActivityColor(item);
+  context.globalAlpha = 0.9; // a little transparent, so overlapping bars can be seen
+  context.fillStyle = color.fill;
   context.fillRect(startX, top + BAR_MARGIN, width, ROW_HEIGHT - BAR_MARGIN * 2);
   context.globalAlpha = 1;
-  context.font = 'bold 15px system-ui, sans-serif';
+  context.font = `bold 15px ${FONT}`;
   context.textAlign = 'left';
   let right = startX + width;
   const insideText = fitText(context, item.title, width - 16);
   if (insideText.replace('…', '').length >= MIN_LETTERS_INSIDE) {
-    context.fillStyle = '#ffffff';
+    context.fillStyle = color.text;
     context.fillText(insideText, startX + 8, textY);
   } else {
     const title = fitText(context, item.title, canvas.width - RIGHT_SPACE - right - 6);
-    context.fillText(title, right + 6, textY); // fillStyle is still ACTIVITY_COLOR
+    context.fillStyle = TEXT_COLOR; // outside the bar: dark ink reads well on every color
+    context.fillText(title, right + 6, textY);
     right = right + 6 + context.measureText(title).width;
   }
   shapes.push({ left: startX, right, top, bottom: top + ROW_HEIGHT, item });
@@ -190,7 +209,7 @@ function drawReminder(context, canvas, item, day, top, hourToX) {
   context.lineTo(x - DIAMOND_SIZE, centerY);
   context.closePath();
   context.fill();
-  context.font = 'bold 15px system-ui, sans-serif';
+  context.font = `bold 15px ${FONT}`;
   context.textAlign = 'left';
   const textX = x + DIAMOND_SIZE + 6;
   const title = fitText(context, item.title, canvas.width - RIGHT_SPACE - textX);

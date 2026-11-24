@@ -1,27 +1,62 @@
 /* public/css/styles.css
    Dashboard styles for the Event-Driven Agenda.
-   Plain CSS: color variables, grid/flex layout, the form <dialog>,
-   .focused (Event 05) and .toast (alerts). System fonts only, so it works offline.
+   Plain CSS: fonts, color variables, grid/flex layout, the form <dialog>,
+   .focused (Event 05) and .toast (alerts). The fonts live in public/fonts,
+   so the page looks the same without internet.
    Rubric: GUI. No CSS frameworks. */
+
+/* ---------- Fonts (local files, SIL Open Font License) ---------- */
+/* Each file is a variable font: one file serves every weight in the range. */
+@font-face {
+  font-family: 'Besley';
+  src: url('../fonts/besley.woff2') format('woff2');
+  font-weight: 400 900;
+  font-style: normal;
+  font-display: swap; /* show the fallback font while the file loads */
+}
+
+@font-face {
+  font-family: 'Atkinson Hyperlegible Next';
+  src: url('../fonts/atkinson-hyperlegible-next.woff2') format('woff2');
+  font-weight: 200 800;
+  font-style: normal;
+  font-display: swap;
+}
 
 /* ---------- Colors and shared values ---------- */
 :root {
-  --paper: #eef0f3;          /* page background (cool light gray) */
+  /* Fonts: serif for titles, sans-serif for everything else (body, table, numbers). */
+  --font-display: 'Besley', Georgia, 'Times New Roman', serif;
+  --font-body: 'Atkinson Hyperlegible Next', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  /* Jewel palette. The 6 activity colors are repeated in timeline.js (the canvas). */
+  --sapphire: #1f4fbf;
+  --emerald: #0b7a56;
+  --coral: #c4462f;
+  --amber: #f2ad33;
+  --magenta: #a3236b;
+  --turquoise: #3cc2bf;
+  --amethyst: #5b30b0;       /* reminders only, so they never look like an activity */
+
+  /* Roles */
+  --brand: #142a66;          /* deep sapphire: header band and the main panel border */
+  --brand-muted: #c7d3f2;    /* secondary text on the brand band */
+  --canvas: #ecf0f8;         /* page background (white with a touch of sapphire) */
   --surface: #ffffff;        /* cards and inputs */
-  --ink: #1b2230;            /* main text and strong rules */
-  --muted: #5d6573;          /* secondary text */
-  --line: #d6dae1;           /* light borders */
-  --control-border: #9aa1ad; /* input and button borders */
-  --primary: #2448c4;        /* activities and the main button */
-  --primary-dark: #1c3a9f;
-  --primary-soft: #e9eefc;
-  --accent: #94500a;         /* reminders */
-  --accent-soft: #fcefd9;
-  --danger: #b42318;
-  --danger-soft: #fdecea;
-  --success: #1f7a4d;
+  --ink: #172033;            /* main text and strong rules */
+  --muted: #545e72;          /* secondary text */
+  --line: #d8deea;           /* light borders */
+  --control-border: #828da3; /* input and button borders (3:1 on white) */
+  --primary: var(--sapphire);/* activities and the main buttons */
+  --primary-dark: #193f9a;
+  --primary-soft: #e7edfb;
+  --reminder: var(--amethyst);
+  --reminder-soft: #efe8fb;
+  --danger: #b3261e;
+  --danger-soft: #fcebea;
+  --success: #0a6b4c;
+  --success-soft: #d6f2e6;
   --radius: 10px;
-  --font: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 }
 
 * {
@@ -33,14 +68,12 @@
   display: none !important;
 }
 
-/* The side padding of the body keeps every section away from the screen edge. */
 body {
   margin: 0;
-  padding: 0 16px;
-  font-family: var(--font);
+  font-family: var(--font-body);
   font-size: 1rem;
   line-height: 1.5;
-  background: var(--paper);
+  background: var(--canvas);
   color: var(--ink);
   accent-color: var(--primary);
 }
@@ -51,39 +84,47 @@ body {
   color: var(--ink);
 }
 
+/* ---------- Titles (serif) ---------- */
 h1, h2 {
   margin: 0;
+  font-family: var(--font-display);
   line-height: 1.2;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
 }
 
 h2 {
   margin-bottom: 16px;
-  font-size: 1.2rem;
-  font-weight: 700;
+  font-size: 1.3rem;
+  font-weight: 600;
 }
 
-/* ---------- Header ---------- */
+/* ---------- Header: full-width brand band ---------- */
 .page-header {
+  background: var(--brand);
+  color: #ffffff;
+}
+
+/* The content inside the band has the same width as the page below it. */
+.header-inner {
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
   gap: 12px 24px;
-  max-width: 1256px;
+  max-width: 1288px;
   margin: 0 auto;
-  padding: 24px 0 16px;
-  border-bottom: 2px solid var(--ink);
+  padding: 24px 16px;
 }
 
 h1 {
-  font-size: 1.75rem;
-  font-weight: 800;
-  letter-spacing: -0.02em;
+  font-size: 2rem;
+  font-weight: 700;
 }
 
 .subtitle {
   margin: 4px 0 0;
-  color: var(--muted);
+  color: var(--brand-muted);
 }
 
 /* Connection badge: app.js adds the "live" class when SSE is open. */
@@ -92,10 +133,10 @@ h1 {
   align-items: center;
   gap: 8px;
   padding: 6px 14px;
-  border: 1px solid var(--line);
+  border: 1px solid rgba(255, 255, 255, 0.25);
   border-radius: 999px;
-  background: var(--surface);
-  color: var(--muted);
+  background: rgba(255, 255, 255, 0.1);
+  color: #dfe6f8;
   font-size: 0.875rem;
   font-weight: 600;
   white-space: nowrap;
@@ -107,17 +148,13 @@ h1 {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--muted);
+  background: currentColor;
 }
 
 .status.live {
-  border-color: #b7dcc8;
-  background: #eaf6ef;
+  border-color: var(--success-soft);
+  background: var(--success-soft);
   color: var(--success);
-}
-
-.status.live::before {
-  background: var(--success);
 }
 
 /* ---------- Layout ---------- */
@@ -127,9 +164,9 @@ h1 {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 20px;
-  max-width: 1256px;
+  max-width: 1288px;
   margin: 0 auto;
-  padding: 20px 0 48px;
+  padding: 24px 16px 48px;
 }
 
 .lower {
@@ -152,7 +189,7 @@ h1 {
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--surface);
-  box-shadow: 0 1px 2px rgba(27, 34, 48, 0.05);
+  box-shadow: 0 1px 3px rgba(20, 42, 102, 0.06);
 }
 
 /* A heading with something on its right (a button or the counters). */
@@ -179,12 +216,12 @@ dialog {
   border-radius: var(--radius);
   background: var(--surface);
   color: var(--ink);
-  box-shadow: 0 20px 48px rgba(27, 34, 48, 0.25);
+  box-shadow: 0 20px 48px rgba(20, 42, 102, 0.25);
 }
 
-/* The dark layer behind the dialog. */
+/* The dark layer behind the dialog (brand color, half transparent). */
 dialog::backdrop {
-  background: rgba(27, 34, 48, 0.5);
+  background: rgba(20, 42, 102, 0.55);
 }
 
 /* ---------- Form ---------- */
@@ -256,11 +293,12 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
   font-size: 0.8rem;
 }
 
+/* Keycap look: a thin border plus a 1px shadow under the key. */
 kbd {
   padding: 1px 6px;
   border: 1px solid var(--control-border);
-  border-bottom-width: 2px;
   border-radius: 4px;
+  box-shadow: 0 1px 0 var(--control-border);
   background: var(--surface);
   color: var(--ink);
   font-family: inherit;
@@ -284,7 +322,7 @@ button {
 }
 
 button:hover {
-  background: var(--paper);
+  background: var(--canvas);
 }
 
 /* A disabled button (e.g. "Today" when this week is already shown). */
@@ -320,13 +358,14 @@ button.danger:hover {
 }
 
 /* ---------- Week view: the main panel (Events 01 and 04) ---------- */
-/* A stronger border and a bigger title: it is the most important part of the page. */
+/* A brand-color border and a bigger title: it is the most important part of the page. */
 .week {
-  border: 2px solid var(--ink);
+  border: 2px solid var(--brand);
 }
 
 .week h2 {
-  font-size: 1.5rem;
+  font-size: 1.65rem;
+  font-weight: 700;
 }
 
 /* Right side of the week header: week navigation + "+ New item". */
@@ -351,7 +390,7 @@ button.danger:hover {
   margin: 14px 0 0;
   color: var(--muted);
   font-size: 0.95rem;
-  font-variant-numeric: tabular-nums;
+  font-variant-numeric: tabular-nums; /* digits of the same width: the line does not jump */
 }
 
 /* ---------- Activity list ---------- */
@@ -406,8 +445,8 @@ th {
   border-bottom: 1px solid var(--ink);
   color: var(--muted);
   font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.05em;
+  font-weight: 700;
+  letter-spacing: 0.06em;
   text-align: left;
   text-transform: uppercase;
 }
@@ -450,15 +489,15 @@ td button + button {
 }
 
 .badge.reminder {
-  background: var(--accent-soft);
-  color: var(--accent);
+  background: var(--reminder-soft);
+  color: var(--reminder);
 }
 
 .details-bar {
   margin: 16px 0 0;
   padding: 10px 14px;
   border-radius: 6px;
-  background: var(--paper);
+  background: var(--canvas);
   color: var(--muted);
   font-size: 0.9rem;
 }
@@ -478,13 +517,13 @@ td button + button {
 .counter-value {
   color: var(--primary);
   font-size: 2rem;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1;
   font-variant-numeric: tabular-nums;
 }
 
 .counter.reminder .counter-value {
-  color: var(--accent);
+  color: var(--reminder);
 }
 
 .counter-label {
@@ -519,11 +558,11 @@ canvas {
   padding: 6px 10px;
   border-radius: 6px;
   background: var(--ink);
-  color: var(--paper);
+  color: #ffffff;
   font-size: 0.875rem;
   font-weight: 600;
   pointer-events: none;
-  box-shadow: 0 4px 12px rgba(27, 34, 48, 0.2);
+  box-shadow: 0 4px 12px rgba(20, 42, 102, 0.25);
 }
 
 /* Tooltip of the week view: several lines, normal weight, max 320px wide. */
@@ -572,8 +611,8 @@ canvas {
   border: 1px solid transparent;
   border-radius: 8px;
   background: var(--ink);
-  color: var(--paper);
-  box-shadow: 0 8px 24px rgba(27, 34, 48, 0.18);
+  color: #ffffff;
+  box-shadow: 0 8px 24px rgba(20, 42, 102, 0.2);
   cursor: pointer;
   animation: toast-in 0.25s ease-out;
 }
@@ -588,11 +627,12 @@ canvas {
   color: #ffffff;
 }
 
-/* Reminder alert (Event 08): bigger, so it is seen from the back of the room. */
+/* Reminder alert (Event 08): bigger, so it is seen from the back of the room.
+   Same amethyst as the reminder diamonds. */
 .toast-alert {
   padding: 18px 20px;
-  border-color: var(--accent);
-  background: var(--accent-soft);
+  border: 2px solid var(--reminder);
+  background: var(--reminder-soft);
   color: var(--ink);
   font-size: 1.05rem;
   font-weight: 600;
@@ -630,18 +670,14 @@ canvas {
 /* ---------- Wide screens (1100px and more) ---------- */
 /* Table (60%) next to the chart and the activity (40%). */
 @media (min-width: 1100px) {
-  body {
-    padding: 0 32px;
-  }
-
-  .page-header {
-    padding-top: 32px;
-    padding-bottom: 20px;
+  .header-inner {
+    max-width: 1320px;
+    padding: 28px 32px;
   }
 
   .layout {
-    padding-top: 24px;
-    padding-bottom: 64px;
+    max-width: 1320px;
+    padding: 28px 32px 64px;
   }
 
   .lower {

@@ -413,6 +413,6 @@ function registerDomEvents() {
 document.addEventListener('DOMContentLoaded', () => {
   registerDomEvents();
   toggleTypeFields();
-  refreshAll();
+  document.fonts.ready.then(refreshAll); // draw the canvases after our fonts are loaded
   connectToServerEvents();
 });

@@ -57,6 +57,7 @@ Follow these steps in order during the presentation:
 | Real time | Server-Sent Events (native `EventSource`) |
 | Frontend | Plain HTML, CSS and JavaScript (browser ES modules) |
 | Charts | Hand-drawn `<canvas>` (week view and 7-day bar chart) |
+| Fonts | Besley (titles) and Atkinson Hyperlegible Next (text and numbers), local `.woff2` files under the SIL Open Font License |
 | Background work | `worker_threads` |
 
 ## Architecture
@@ -65,14 +66,15 @@ Follow these steps in order during the presentation:
 Agenda/
 ├── database/schema.sql          # database, table and sample rows (4 of them today)
 ├── logs/                        # audit.log is written here
-├── public/                      # the dashboard (HTML, CSS, JS)
+├── public/                      # the dashboard (HTML, CSS, JS, fonts)
 │   ├── index.html
 │   ├── css/styles.css
-│   └── js/
-│       ├── app.js               # DOM events, fetch, SSE
-│       ├── chart.js             # 7-day canvas chart + mouse tooltip
-│       ├── timeline.js          # week view (canvas) + mouse tooltip
-│       └── format.js            # clock times and HH:MM durations
+│   ├── js/
+│   │   ├── app.js               # DOM events, fetch, SSE
+│   │   ├── chart.js             # 7-day canvas chart + mouse tooltip
+│   │   ├── timeline.js          # week view (canvas) + mouse tooltip
+│   │   └── format.js            # clock times and HH:MM durations
+│   └── fonts/                   # Besley + Atkinson Hyperlegible Next (.woff2) and their OFL licenses
 └── src/
     ├── server.js                # Express API, SSE, startup, shutdown, errors
     ├── config/                  # constants.js (event names), database.js (pool)
@@ -153,6 +155,10 @@ Events with **multiple handlers**: `ITEM_CREATED` → audit + ui; `REMINDER_DUE`
 | Week navigation in the browser | A new API route per week | `/api/items` already sends every item, so `‹ Prev / Next ›` only redraws the canvas with another `weekOffset`. |
 | Hour axis from the visible week (`getHourRange`) | A fixed 6 AM–12 AM axis | Bars use the space better; a 6-hour minimum avoids giant bars and the current hour is always included, so "Now" is visible. |
 | HTML tooltip over the canvas | Text drawn on the canvas | HTML can wrap lines and show a list; `textContent` keeps user text safe. |
+| Two fonts: **Besley** (serif, titles) + **Atkinson Hyperlegible Next** (sans-serif, body, table and numbers) | System fonts only; Inter / Roboto; a thin elegant serif | Besley is a Clarendon-style serif: elegant with character, like an academic almanac, and its solid wedge serifs do not disappear on a projector. Atkinson Hyperlegible was made by the Braille Institute so letters are hard to confuse (I / l / 1, 0 / O): good for reading from the back of the classroom. Numbers use `tabular-nums`, so times and counters do not jump when they change. |
+| Fonts as local files in `public/fonts` | Google Fonts by URL | The demo works **without internet** and looks the same on every computer. Both fonts use the SIL Open Font License (OFL), which allows sharing them in the repo; the license files are next to the fonts. Each file is a variable font (one file for all weights). |
+| Jewel-tone palette: sapphire, emerald, coral, amber, magenta, turquoise (+ amethyst for reminders) | Neon colors; one color for everything; purple gradients | Saturated but deep colors look lively and still serious. Every activity gets a color with `PALETTE[item.id % PALETTE.length]` in `timeline.js`: one line, no database changes, and the same activity always has the same color. Text inside a bar is white on dark colors and dark on light ones (amber, turquoise); all text passes WCAG AA (4.5:1). Reminders use amethyst, a color outside the activity palette, so a diamond never looks like an activity. |
+| Deep sapphire brand band in the header | Gray header | Gives the page identity without coloring every panel; the same color frames the main panel (week view). |
 | `getEndDate()` in the models | Computing the end time in the browser | Polymorphism: `AgendaItem` returns the start date, `Activity` overrides it with start + `durationMinutes`; `toJSON()` sends `endDate` so the browser only draws. |
 | Worker thread for statistics | Compute in the main thread | Heavy work leaves the main event loop free. |
 | `Queue`, `Stack`, `Set` | Plain arrays | Queue: log lines are written one by one, in order. Stack: newest activity first (max 10). Set: a reminder alerts only once, and each SSE client is stored once. |
@@ -234,3 +240,4 @@ Every item in the responses also has `endDate` (same format as `date`).
 | `public/js/chart.js` | 7-day canvas chart and tooltip |
 | `public/js/timeline.js` | Week view (canvas, one row per day), `getHourRange()`, `getWeekDays()` and the HTML tooltip |
 | `public/js/format.js` | `formatClock()`, `formatDate()`, `formatDuration()` (`HH:MM hrs`) |
+| `public/fonts/` | Local font files (`.woff2`) and their OFL licenses |
