@@ -128,9 +128,14 @@ class AgendaService {
           return;
         }
         appEvents.emit(EVENTS.STATS_READY, stats);
+        // The worker already answered: stop its thread instead of leaving it alive.
+        worker.terminate();
         resolve(stats);
       });
-      worker.on('error', reject);
+      worker.on('error', (error) => {
+        worker.terminate();
+        reject(error);
+      });
     });
   }
 }
