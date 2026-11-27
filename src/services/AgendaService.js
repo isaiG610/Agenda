@@ -75,6 +75,13 @@ class AgendaService {
     const item = this.#buildItem(data); // validate BEFORE touching the DB
     const result = await this.#runQuery(INSERT_SQL, rowValues(itemToRow(item)));
     const rows = await this.#runQuery('SELECT * FROM agenda_items WHERE id = ?', [result.insertId]);
+    // The INSERT succeeded, so the row must be there. If it is not,
+    // fail with a clear 500 instead of crashing on rows[0] being undefined.
+    if (rows.length === 0) {
+      const error = new Error(`Item ${result.insertId} was inserted but could not be read back.`);
+      error.status = 500;
+      throw error;
+    }
     const saved = rowToItem(rows[0]);
     this.#items.set(saved.id, saved);
     // [EVENT 10] Emit ONLY after MySQL succeeded. Subscribers: audit + ui.
