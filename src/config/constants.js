@@ -17,6 +17,7 @@ export const EVENTS = Object.freeze({
   STATS_READY: 'stats:ready',
   APP_ERROR: 'app:error',
   APP_SHUTDOWN: 'app:shutdown',
+  FILE_CHANGED: 'file:changed',
 });
 
 export const ITEM_TYPES = Object.freeze({ ACTIVITY: 'activity', REMINDER: 'reminder' });

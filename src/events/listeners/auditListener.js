@@ -91,5 +91,8 @@ export function registerAuditListener() {
   appEvents.on(EVENTS.APP_SHUTDOWN, (info) => {
     recordEvent(EVENTS.APP_SHUTDOWN, 'Server shutting down', info);
   });
+  appEvents.on(EVENTS.FILE_CHANGED, (info) => {
+    recordEvent(EVENTS.FILE_CHANGED, `Schema file changed: ${info.file}`, info);
+  });
   // TIMER_TICK is NOT logged on purpose: one line every 10 s would flood the file.
 }

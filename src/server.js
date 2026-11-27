@@ -13,6 +13,7 @@ import { EVENTS } from './config/constants.js';
 import { appEvents } from './events/AppEventEmitter.js';
 import { agendaService } from './services/AgendaService.js';
 import { startReminderTimer, stopReminderTimer } from './events/reminderTimer.js';
+import { startFileWatcher, stopFileWatcher } from './events/fileWatcher.js';
 import { registerAuditListener, getRecentActivity, flushAuditLog } from './events/listeners/auditListener.js';
 import { registerAlertListener } from './events/listeners/alertListener.js';
 import { registerUiListener, addClient, removeClient, closeAllClients } from './events/listeners/uiListener.js';
@@ -135,6 +136,7 @@ async function startServer() {
     registerAlertListener();
     registerUiListener();
     startReminderTimer();
+    startFileWatcher();
     server = app.listen(PORT, () => {
       console.log(`Server ready at http://localhost:${PORT}`);
       appEvents.emit(EVENTS.SERVER_READY, { port: PORT, items: total });
@@ -153,6 +155,7 @@ async function startServer() {
 async function shutdown() {
   console.log('\nShutting down...');
   appEvents.emit(EVENTS.APP_SHUTDOWN, { reason: 'SIGINT' });
+  stopFileWatcher(); // stop watching first, so no new event arrives after the flush
   await flushAuditLog(); // the shutdown line must reach audit.log before exit
   stopReminderTimer();
   closeAllClients();

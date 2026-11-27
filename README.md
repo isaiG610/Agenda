@@ -173,6 +173,7 @@ classDiagram
 | 04 | Mouse tracking | `timeline.js`: `mousemove` on the week view → HTML tooltip (several lines, built with `textContent`); `chart.js`: `mousemove` → tooltip; `mouseover` on table rows → details bar |
 | 05 | Focus / Blur | `app.js`: `focusin` / `focusout` highlight the form inside the dialog; `visibilitychange` reloads data |
 | 06 | Destroy / Cleanup | `server.js` `SIGINT` → `APP_SHUTDOWN`, stop timer, close SSE clients, close DB pool |
+| 07 | File Watcher | `fileWatcher.js` `fs.watch` on `database/schema.sql` → `FILE_CHANGED` → audit log |
 | 08 | Custom threshold alert | `REMINDER_DUE` (time left <= `minutesBefore`), `Reminder.isDue()` |
 | 09 | Unhandled exception | `process.on('uncaughtException')` and `'unhandledRejection'` → `APP_ERROR` → audit |
 | 10 | CRUD Data Change | `AgendaService` emits `ITEM_CREATED` / `ITEM_UPDATED` / `ITEM_DELETED` after MySQL succeeds; the browser redraws the table and the week view |
