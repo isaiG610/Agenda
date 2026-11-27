@@ -212,7 +212,9 @@ Events with **multiple handlers**: `ITEM_CREATED` → audit + ui; `REMINDER_DUE`
 
 ## Installation
 
-1. Install **Node.js 20+** and **MySQL** (on macOS: `brew install mysql` and `brew services start mysql`; MariaDB also works).
+1. Install **Node.js 20+** and **MySQL** (MariaDB also works).
+   - macOS: `brew install mysql` and `brew services start mysql`.
+   - Windows: install Node.js LTS from nodejs.org and MySQL with the MySQL Installer from dev.mysql.com (choose "Server Only" or "Developer Default"), then start the MySQL80 service from Services. In PowerShell, copy the env file with `Copy-Item .env.example .env` instead of `cp`, and run the schema with `mysql -u root -p < database/schema.sql` from Git Bash or from the MySQL Shell.
 2. Install the dependencies:
    ```bash
    npm install
