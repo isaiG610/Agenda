@@ -48,7 +48,7 @@ class AgendaService {
   }
 
   async loadAll() {
-    const rows = await this.#runQuery('SELECT * FROM agenda_items');
+    const rows = await this.#runQuery('SELECT * FROM agenda_items ORDER BY date ASC');
     this.#items.clear();
     for (const row of rows) {
       const item = rowToItem(row);
