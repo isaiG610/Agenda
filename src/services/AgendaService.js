@@ -85,7 +85,14 @@ class AgendaService {
   async update(id, data) {
     const itemId = this.getById(id).id; // 404 if it does not exist
     const item = this.#buildItem({ ...data, id: itemId });
-    await this.#runQuery(UPDATE_SQL, [...rowValues(itemToRow(item)), itemId]);
+    const result = await this.#runQuery(UPDATE_SQL, [...rowValues(itemToRow(item)), itemId]);
+    // The row must exist in MySQL too, not only in the Map cache.
+    // affectedRows === 0 means the UPDATE changed nothing in the database.
+    if (result.affectedRows === 0) {
+      const error = new Error(`Item ${itemId} not found in database.`);
+      error.status = 404;
+      throw error;
+    }
     this.#items.set(itemId, item);
     // [EVENT 10] Emit ONLY after MySQL succeeded. Subscribers: audit + ui + timer.
     appEvents.emit(EVENTS.ITEM_UPDATED, item.toJSON());
@@ -94,7 +101,14 @@ class AgendaService {
 
   async remove(id) {
     const item = this.getById(id);
-    await this.#runQuery('DELETE FROM agenda_items WHERE id = ?', [item.id]);
+    const result = await this.#runQuery('DELETE FROM agenda_items WHERE id = ?', [item.id]);
+    // Same check as in update(): do not delete from the cache
+    // or emit ITEM_DELETED if MySQL deleted nothing.
+    if (result.affectedRows === 0) {
+      const error = new Error(`Item ${item.id} not found in database.`);
+      error.status = 404;
+      throw error;
+    }
     this.#items.delete(item.id);
     // [EVENT 10] Emit ONLY after MySQL succeeded. Subscribers: audit + ui + timer.
     appEvents.emit(EVENTS.ITEM_DELETED, item.toJSON());

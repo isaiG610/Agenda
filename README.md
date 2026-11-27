@@ -105,6 +105,53 @@ flowchart LR
   UI -- SSE --> Page[Browser re-renders week view, table, chart, toast]
 ```
 
+## Class diagram (UML)
+
+```mermaid
+classDiagram
+  class AgendaItem {
+    <<abstract>>
+    -#id
+    -#title
+    -#date
+    -#description
+    +get type()
+    +getSummary()
+    +isDue(now)
+    +getEndDate()
+    +toJSON()
+  }
+  class Activity {
+    -#location
+    -#durationMinutes
+    +getEndDate()
+    +toJSON()
+  }
+  class Reminder {
+    -#minutesBefore
+    +isDue(now)
+    +toJSON()
+  }
+  class AgendaService {
+    -#items: Map
+    +create(data)
+    +update(id, data)
+    +remove(id)
+    +getAll()
+    +getById(id)
+    +getStats()
+  }
+  class Serializer {
+    +createItem(data)
+    +rowToItem(row)
+    +itemToRow(item)
+  }
+  AgendaItem <|-- Activity
+  AgendaItem <|-- Reminder
+  AgendaService --> AgendaItem : holds in Map
+  AgendaService --> Serializer : uses
+```
+
 ## Rubric mapping
 
 | Rubric criterion | Where it is covered |
